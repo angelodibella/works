@@ -1,0 +1,111 @@
+\documentclass[tikz,border=6pt]{standalone}
+\input{figstyle.tex}
+
+% Linear interpolation helper for crossing-point coordinates
+\pgfmathdeclarefunction{lerp}{3}{%
+  \pgfmathparse{#1 + #3*(#2-#1)}%
+}
+
+\begin{document}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  % Wider column spacing and taller vertical scale for legibility.
+  % The monomial index scale factor ys=0.22 gives total height ~7.7cm.
+  \def\xX{0.00}
+  \def\xL{1.60}
+  \def\xR{3.60}
+  \def\xZ{5.60}
+  \def\ys{0.22}
+  \pgfmathsetmacro{\top}{35*\ys+0.3}
+
+  % ── Guide columns with faint lattice dots ──
+  \foreach \x/\lab in {\xX/$q(X)$,\xL/$q(L)$,\xR/$q(R)$,\xZ/$q(Z)$}{
+    \draw[faintcol] (\x,-0.30) -- (\x,\top);
+    \node[reglabel, anchor=south, font=\footnotesize] at (\x,\top+0.12) {\lab};
+    \foreach \r in {0,...,35}{\fill[black!10] (\x,{\ys*\r}) circle (0.015);}
+  }
+
+  % ── B₃-round edges ──
+  % A subset sources → targets via π_{B₃}^⊤
+  \draw[routeA] (\xL,{\ys*3})  -- (\xZ,{\ys*15});
+  \draw[routeA] (\xL,{\ys*12}) -- (\xZ,{\ys*24});
+  \draw[routeA] (\xL,{\ys*21}) -- (\xZ,{\ys*33});
+  % B subset sources → targets
+  \draw[routeB] (\xL,{\ys*24}) -- (\xZ,{\ys*0});
+  \draw[routeB] (\xL,{\ys*27}) -- (\xZ,{\ys*3});
+  \draw[routeB] (\xL,{\ys*33}) -- (\xZ,{\ys*9});
+
+  % ── 9 crossing diamonds (one per A×B pair) ──
+  % Each computed as parametric intersection t on the A-edge.
+  % A-edge from (xL, ys*a) to (xZ, ys*ta), B-edge from (xL, ys*b) to (xZ, ys*tb).
+  % t = (a-b) / ((a-b)-(ta-tb)), then lerp on x and y.
+  \foreach \a/\ta/\b/\tb in {
+    3/15/24/0,   3/15/27/3,   3/15/33/9,
+    12/24/24/0,  12/24/27/3,  12/24/33/9,
+    21/33/24/0,  21/33/27/3,  21/33/33/9}{
+    \pgfmathsetmacro{\tval}{(\a-\b)/((\a-\b)-(\ta-\tb))}
+    \node[crossdot] at ({lerp(\xL,\xZ,\tval)},{lerp(\ys*\a,\ys*\ta,\tval)}) {};
+  }
+
+  % ── Source nodes on q(L) ──
+  \node[srcA] at (\xL,{\ys*3}) {};
+  \node[srcA] at (\xL,{\ys*12}) {};
+  \node[srcA] at (\xL,{\ys*21}) {};
+  \node[srcB] at (\xL,{\ys*24}) {};
+  \node[srcB] at (\xL,{\ys*27}) {};
+  \node[srcB] at (\xL,{\ys*33}) {};
+
+  % ── Target nodes on q(Z) ──
+  \node[tgtA] at (\xZ,{\ys*15}) {};
+  \node[tgtA] at (\xZ,{\ys*24}) {};
+  \node[tgtA] at (\xZ,{\ys*33}) {};
+  \node[tgtB] at (\xZ,{\ys*0}) {};
+  \node[tgtB] at (\xZ,{\ys*3}) {};
+  \node[tgtB] at (\xZ,{\ys*9}) {};
+
+  % ── Source labels (left of q(L)) ──
+  \node[anchor=east, text=okBlue!85!black, font=\small]
+    at ({\xL-0.18},{\ys*3}) {$y^3$};
+  \node[anchor=east, text=okBlue!85!black, font=\small]
+    at ({\xL-0.18},{\ys*12}) {$x^2$};
+  \node[anchor=east, text=okBlue!85!black, font=\small]
+    at ({\xL-0.18},{\ys*21}) {$x^3y^3$};
+  \node[anchor=east, text=okRed!85!black, font=\small]
+    at ({\xL-0.18},{\ys*24}) {$x^4$};
+  \node[anchor=east, text=okRed!85!black, font=\small]
+    at ({\xL-0.18},{\ys*27}) {$x^4y^3$};
+  \node[anchor=east, text=okRed!85!black, font=\small]
+    at ({\xL-0.18},{\ys*33}) {$x^5y^3$};
+
+  % ── Target labels (right of q(Z)) ──
+  \node[anchor=west, text=okBlue!85!black, font=\small]
+    at ({\xZ+0.18},{\ys*15}) {$x^2y^3$};
+  \node[anchor=west, text=okBlue!85!black, font=\small]
+    at ({\xZ+0.18},{\ys*24}) {$x^4$};
+  \node[anchor=west, text=okBlue!85!black, font=\small]
+    at ({\xZ+0.18},{\ys*33}) {$x^5y^3$};
+  \node[anchor=west, text=okRed!85!black, font=\small]
+    at ({\xZ+0.18},{\ys*0}) {$1$};
+  \node[anchor=west, text=okRed!85!black, font=\small]
+    at ({\xZ+0.18},{\ys*3}) {$y^3$};
+  \node[anchor=west, text=okRed!85!black, font=\small]
+    at ({\xZ+0.18},{\ys*9}) {$xy^3$};
+
+  % ── Braces (placed far left, no label overlap) ──
+  \draw[decorate,decoration={brace,amplitude=5pt,mirror},
+        draw=okBlue!80!black, line width=0.7pt]
+    ({\xL-0.90},{\ys*3-0.10}) -- ({\xL-0.90},{\ys*21+0.10})
+    node[midway,left=7pt,text=okBlue!85!black,font=\normalsize] {$A$};
+  \draw[decorate,decoration={brace,amplitude=5pt,mirror},
+        draw=okRed!80!black, line width=0.7pt]
+    ({\xL-0.90},{\ys*24-0.10}) -- ({\xL-0.90},{\ys*33+0.10})
+    node[midway,left=7pt,text=okRed!85!black,font=\normalsize] {$B$};
+
+  % ── Descriptive chips below (centered, well-separated) ──
+  \node[chip, fill=softBlue, anchor=north, font=\footnotesize]
+    at ({(\xL+\xZ)/2},-0.85)
+    {Exact $B_3$ round on $S_{\mathrm{ref}}$: every $A$ edge crosses every $B$ edge};
+  \node[chip, fill=softRed, anchor=north, font=\footnotesize]
+    at ({(\xL+\xZ)/2},-1.60)
+    {$\pi_{B_3}^{\mathsf{T}}\!(S_{\mathrm{ref}})=\{x^2y^3,\,x^4,\,x^5y^3,\,1,\,y^3,\,xy^3\}$};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,13 @@
+{
+  "suites": {
+    "bb72_smoke": "Circuit construction and decoder smoke tests on BB72.",
+    "bb72_crossing_compare": "Crossing-local comparison of monomial-column and IBM-inspired biplanar embeddings.",
+    "bb72_distance_decay": "Distance-decay sweeps on BB72 using power-law and exponential kernels.",
+    "bb144_scaling": "Selected BB144 scaling points under local and distance-decay models.",
+    "bb72_j0_sweep_crossing": "Crossing-kernel J0 sweep for the theorem-facing BB72 sector.",
+    "bb72_xi_sweep": "Exponential-kernel correlation-length sweep on BB72.",
+    "bb72_per_sweep_mono": "PER sweep for BB72 single-layer embedding.",
+    "bb72_per_sweep_bi": "PER sweep for BB72 biplanar embedding.",
+    "bb72_full_cycle_control": "Robustness control using full-cycle geometry insertion on BB72."
+  }
+}

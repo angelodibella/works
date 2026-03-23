@@ -1,0 +1,196 @@
+\documentclass[tikz,border=6pt]{standalone}
+\input{figstyle.tex}
+\usetikzlibrary{shapes.arrows}
+
+\pgfmathdeclarefunction{lerp}{3}{%
+  \pgfmathparse{#1 + #3*(#2-#1)}%
+}
+
+\begin{document}
+\begin{tikzpicture}[x=1cm,y=1cm]
+
+% ====================================================================
+% PANEL (a): Exact B3-round crossing pattern on S_ref
+% ====================================================================
+\node[paneltag, anchor=south west] at (-0.10,6.65) {\textbf{(a)}};
+\node[titleline, anchor=south west] at (0.55,6.65)
+  {Exact $B_3$-round crossing pattern on $S_{\mathrm{ref}}$};
+
+% No visible panel border — just an invisible anchor node
+\node[minimum width=7.0cm, minimum height=6.0cm,
+      anchor=north west, inner sep=0pt] (leftp) at (0,6.45) {};
+
+% Only q(L) and q(Z) columns — no q(X)/q(R) per spec
+\def\xL{1.30}
+\def\xZ{5.50}
+\def\ys{0.82}  % vertical spacing between support nodes
+
+% Guide lines
+\draw[faintcol] ($(leftp.south west)+(\xL,0.30)$)
+             -- ($(leftp.south west)+(\xL,5.55)$);
+\draw[faintcol] ($(leftp.south west)+(\xZ,0.30)$)
+             -- ($(leftp.south west)+(\xZ,5.55)$);
+
+% Column labels at top of guide lines, well above topmost node
+\node[font=\footnotesize, text=black!45, anchor=south]
+  at ($(leftp.south west)+(\xL,5.65)$) {$q(L)$};
+\node[font=\footnotesize, text=black!45, anchor=south]
+  at ($(leftp.south west)+(\xZ,5.65)$) {$q(Z)$};
+
+% Source positions (bottom to top): y³, x², x³y³, x⁴, x⁴y³, x⁵y³
+% at y = 0.60, 1.42, 2.24, 3.06, 3.88, 4.70
+\def\sA{0.60}   % y³ (index 3)
+\def\sB{1.42}   % x² (index 12)
+\def\sC{2.24}   % x³y³ (index 21)
+\def\sD{3.06}   % x⁴ (index 24)
+\def\sE{3.88}   % x⁴y³ (index 27)
+\def\sF{4.70}   % x⁵y³ (index 33)
+
+% Target positions via π_{B₃}^⊤:
+% y³→x²y³(15), x²→x⁴(24), x³y³→x⁵y³(33), x⁴→1(0), x⁴y³→y³(3), x⁵y³→xy³(9)
+\def\tD{0.60}   % 1
+\def\tE{1.42}   % y³
+\def\tF{2.24}   % xy³
+\def\tA{3.06}   % x²y³
+\def\tB{3.88}   % x⁴
+\def\tC{4.70}   % x⁵y³
+
+% A-edges (blue): y³→x²y³, x²→x⁴, x³y³→x⁵y³
+\draw[routeA] ($(leftp.south west)+(\xL,\sA)$) -- ($(leftp.south west)+(\xZ,\tA)$);
+\draw[routeA] ($(leftp.south west)+(\xL,\sB)$) -- ($(leftp.south west)+(\xZ,\tB)$);
+\draw[routeA] ($(leftp.south west)+(\xL,\sC)$) -- ($(leftp.south west)+(\xZ,\tC)$);
+
+% B-edges (red): x⁴→1, x⁴y³→y³, x⁵y³→xy³
+\draw[routeB] ($(leftp.south west)+(\xL,\sD)$) -- ($(leftp.south west)+(\xZ,\tD)$);
+\draw[routeB] ($(leftp.south west)+(\xL,\sE)$) -- ($(leftp.south west)+(\xZ,\tE)$);
+\draw[routeB] ($(leftp.south west)+(\xL,\sF)$) -- ($(leftp.south west)+(\xZ,\tF)$);
+
+% 9 crossing diamonds (each A-edge × B-edge)
+\foreach \sa/\ta/\sb/\tb in {
+  \sA/\tA/\sD/\tD, \sA/\tA/\sE/\tE, \sA/\tA/\sF/\tF,
+  \sB/\tB/\sD/\tD, \sB/\tB/\sE/\tE, \sB/\tB/\sF/\tF,
+  \sC/\tC/\sD/\tD, \sC/\tC/\sE/\tE, \sC/\tC/\sF/\tF}{
+  \pgfmathsetmacro{\tval}{(\sa-\sb)/((\sa-\sb)-(\ta-\tb))}
+  \node[crossdot] at ({lerp(\xL,\xZ,\tval)+0},{lerp(\sa,\ta,\tval)+0.45}) {};
+}
+
+% Source nodes
+\foreach \y in {\sA,\sB,\sC} {\node[srcA] at ($(leftp.south west)+(\xL,\y)$) {};}
+\foreach \y in {\sD,\sE,\sF} {\node[srcB] at ($(leftp.south west)+(\xL,\y)$) {};}
+
+% Target nodes
+\foreach \y in {\tA,\tB,\tC} {\node[tgtA] at ($(leftp.south west)+(\xZ,\y)$) {};}
+\foreach \y in {\tD,\tE,\tF} {\node[tgtB] at ($(leftp.south west)+(\xZ,\y)$) {};}
+
+% Source labels (well left of brace)
+\node[anchor=east, text=okBlue!85!black, font=\small]
+  at ($(leftp.south west)+(\xL-0.20,\sA)$) {$y^3$};
+\node[anchor=east, text=okBlue!85!black, font=\small]
+  at ($(leftp.south west)+(\xL-0.20,\sB)$) {$x^2$};
+\node[anchor=east, text=okBlue!85!black, font=\small]
+  at ($(leftp.south west)+(\xL-0.20,\sC)$) {$x^3y^3$};
+\node[anchor=east, text=okRed!85!black, font=\small]
+  at ($(leftp.south west)+(\xL-0.20,\sD)$) {$x^4$};
+\node[anchor=east, text=okRed!85!black, font=\small]
+  at ($(leftp.south west)+(\xL-0.20,\sE)$) {$x^4y^3$};
+\node[anchor=east, text=okRed!85!black, font=\small]
+  at ($(leftp.south west)+(\xL-0.20,\sF)$) {$x^5y^3$};
+
+% Target labels
+\node[anchor=west, text=okBlue!85!black, font=\small]
+  at ($(leftp.south west)+(\xZ+0.20,\tA)$) {$x^2y^3$};
+\node[anchor=west, text=okBlue!85!black, font=\small]
+  at ($(leftp.south west)+(\xZ+0.20,\tB)$) {$x^4$};
+\node[anchor=west, text=okBlue!85!black, font=\small]
+  at ($(leftp.south west)+(\xZ+0.20,\tC)$) {$x^5y^3$};
+\node[anchor=west, text=okRed!85!black, font=\small]
+  at ($(leftp.south west)+(\xZ+0.20,\tD)$) {$1$};
+\node[anchor=west, text=okRed!85!black, font=\small]
+  at ($(leftp.south west)+(\xZ+0.20,\tE)$) {$y^3$};
+\node[anchor=west, text=okRed!85!black, font=\small]
+  at ($(leftp.south west)+(\xZ+0.20,\tF)$) {$xy^3$};
+
+% Braces (opening toward the labels, i.e. facing right)
+\draw[decorate,decoration={brace,amplitude=5pt},
+      draw=okBlue!80!black, line width=0.7pt]
+  ($(leftp.south west)+(\xL-1.05,\sA-0.10)$) -- ($(leftp.south west)+(\xL-1.05,\sC+0.10)$)
+  node[midway,left=7pt,text=okBlue!85!black] {$A$};
+\draw[decorate,decoration={brace,amplitude=5pt},
+      draw=okRed!80!black, line width=0.7pt]
+  ($(leftp.south west)+(\xL-1.05,\sD-0.10)$) -- ($(leftp.south west)+(\xL-1.05,\sF+0.10)$)
+  node[midway,left=7pt,text=okRed!85!black] {$B$};
+
+% Chip below panel (a) — no color tint
+\node[chip, inner sep=5pt, anchor=north, font=\small]
+  at ($(leftp.south)+(0,-0.22)$)
+  {every blue edge crosses every red edge in the exact $B_3$ round};
+
+% ====================================================================
+% BRIDGE: arrow-shaped green label (replaces separate arrow + chip)
+% ====================================================================
+\node[single arrow, single arrow head extend=0.15cm,
+      draw=okGreen!60!black, fill=softGreen, line width=0.6pt,
+      minimum height=3.4cm, minimum width=0.7cm,
+      font=\footnotesize, inner xsep=6pt, inner ysep=3pt,
+      shape border rotate=0, text=black!70]
+  at (8.80,3.70) {crossing $\mapsto$ edge};
+
+% ====================================================================
+% PANEL (b): Induced support graph (shifted right for breathing room)
+% ====================================================================
+\node[paneltag, anchor=south west] at (10.80,6.65) {\textbf{(b)}};
+\node[titleline, anchor=south west] at (11.45,6.65) {Induced support graph};
+
+% Graph vertices — taller bipartite layout (equation aligns with panel (a) chip)
+\def\gL{11.70}  % left partition x
+\def\gR{15.70}  % right partition x
+\def\gT{5.80}   % top y
+\def\gM{3.50}   % middle y
+\def\gB{1.20}   % bottom y
+
+\node[srcA] (a1) at (\gL,\gT) {};
+\node[srcA] (a2) at (\gL,\gM) {};
+\node[srcA] (a3) at (\gL,\gB) {};
+\node[srcB] (b1) at (\gR,\gT) {};
+\node[srcB] (b2) at (\gR,\gM) {};
+\node[srcB] (b3) at (\gR,\gB) {};
+
+% Vertex labels
+\node[anchor=east, text=okBlue!85!black, font=\small] at ($(a1)+(-0.20,0)$) {$y^3$};
+\node[anchor=east, text=okBlue!85!black, font=\small] at ($(a2)+(-0.20,0)$) {$x^2$};
+\node[anchor=east, text=okBlue!85!black, font=\small] at ($(a3)+(-0.20,0)$) {$x^3y^3$};
+\node[anchor=west, text=okRed!85!black, font=\small] at ($(b1)+(0.20,0)$) {$x^4$};
+\node[anchor=west, text=okRed!85!black, font=\small] at ($(b2)+(0.20,0)$) {$x^4y^3$};
+\node[anchor=west, text=okRed!85!black, font=\small] at ($(b3)+(0.20,0)$) {$x^5y^3$};
+
+% K_{3,3} edges (translucent blue-gray)
+\foreach \u/\v in {a1/b1,a1/b2,a1/b3,a2/b1,a2/b2,a2/b3,a3/b1,a3/b2,a3/b3}{
+  \draw[kedge] (\u)--(\v);
+}
+
+% Triangle edges on B (translucent red)
+\draw[triangleedge] (b1)--(b2);
+\draw[triangleedge] (b2)--(b3);
+\draw[triangleedge] (b1) to[bend right=18] (b3);
+
+% Matching edges (green, on top, moderate thickness)
+\draw[matching] (a1)--(b3);
+\draw[matching] (a2)--(b2);
+\draw[matching] (a3)--(b1);
+
+% Explanatory chips further to the right
+\node[chip, inner sep=5pt, fill=softBlue, anchor=north west, font=\footnotesize]
+  at (16.90,6.10) {$K_{3,3}$ from $B_3$};
+\node[chip, inner sep=5pt, fill=softRed, anchor=north west, font=\footnotesize]
+  at (16.90,5.20) {$\Delta_B$ from $B_1$ and $B_2$};
+\node[chip, inner sep=5pt, fill=softGreen, anchor=north west, font=\footnotesize]
+  at (16.90,4.30) {$\nu_\phi^X(L_{\mathrm{ref}})=3$};
+
+% Summary formula below panel (b) — in a chip box, aligned with panel (a) chip
+\node[chip, inner sep=5pt, anchor=north, font=\normalsize] at (14.30,0.40)
+  {$C_\phi^X[S_{\mathrm{ref}}]=K_{3,3}\cup\Delta_B$
+   \quad and \quad
+   $d_{\mathrm{eff},X}(\phi)\le 3$};
+
+\end{tikzpicture}
+\end{document}

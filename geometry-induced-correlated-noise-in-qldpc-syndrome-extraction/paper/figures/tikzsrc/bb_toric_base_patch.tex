@@ -1,0 +1,100 @@
+\documentclass[tikz,border=6pt]{standalone}
+\input{figstyle.tex}
+\usetikzlibrary{decorations.pathreplacing}
+% Local style: lighter green for q(R) to distinguish from q(L)
+\tikzset{
+  qr/.style={circle, fill=okGreen!35, draw=okGreen!55!black,
+             minimum size=4.2pt, inner sep=0pt}
+}
+\begin{document}
+\begin{tikzpicture}[scale=0.88]
+  \def\s{1.35}
+
+  % ── Highlighted unit cell (a,b)=(1,1) — fill and border ──
+  \fill[black!4, rounded corners=2pt]
+    ({2*1*\s-0.32},{2*1*\s-0.32}) rectangle ({(2*1+2)*\s+0.32},{(2*1+2)*\s+0.32});
+  \draw[black!22, dashed, rounded corners=2pt]
+    ({2*1*\s-0.32},{2*1*\s-0.32}) rectangle ({(2*1+2)*\s+0.32},{(2*1+2)*\s+0.32});
+
+  % ── Wraparound target highlights (clipped to grid extent) ──
+  % Grid spans x=[0, (2*3+1)*s], y=[0, (2*3+1)*s].
+  % A₁ target row: b=1 (same row, wraps in Z_ℓ). Faint blue stripe.
+  \fill[okBlue!8]
+    ({-0.15},{2*1*\s-0.18}) rectangle ({(2*3+1)*\s+0.15},{2*1*\s+0.18});
+  % B₁ target column: a=1 (same column, wraps in Z_m). Faint red stripe.
+  \fill[okRed!8]
+    ({(2*1+1)*\s-0.18},{-0.15}) rectangle ({(2*1+1)*\s+0.18},{(2*3+1)*\s+0.15});
+
+  % ── Dashed continuation arrows (drawn BEFORE grid so nodes sit on top) ──
+  % A₁ = x³: X(1,1) → q(L,4,1), wraps off-patch to the right.
+  % Curved to avoid passing through L(2,1) at (5.40, 2.70).
+  \draw[routeA, dashed, opacity=0.60, -{Latex[length=2mm]}]
+    ({(2*1+1)*\s},{2*1*\s}) .. controls ++(0.8,-0.45) and ++(-0.8,-0.45) .. ++(1.85*\s,0)
+    node[pos=0.50, below=2pt, text=okBlue!85!black, font=\scriptsize] {$A_1\!=\!x^3$};
+  % B₁ = y³: X(1,1) → q(R,1,4), wraps off-patch upward.
+  % Curved to avoid passing through R(1,1) at (4.05, 4.05).
+  \draw[routeB, dashed, opacity=0.60, -{Latex[length=2mm]}]
+    ({(2*1+1)*\s},{2*1*\s}) .. controls ++(0.45,0.8) and ++(0.45,-0.8) .. ++(0,1.85*\s)
+    node[pos=0.75, right=2pt, text=okRed!85!black, font=\scriptsize] {$B_1\!=\!y^3$};
+
+  % ── Qubit grid: a,b ∈ {0,...,3} ──
+  \foreach \a in {0,1,2,3} {
+    \foreach \b in {0,1,2,3} {
+      \node[qdata] (L\a\b) at ({2*\a*\s},{2*\b*\s}) {};
+      \node[qx]    (X\a\b) at ({(2*\a+1)*\s},{2*\b*\s}) {};
+      \node[qz]    (Z\a\b) at ({2*\a*\s},{(2*\b+1)*\s}) {};
+      \node[qr]    (R\a\b) at ({(2*\a+1)*\s},{(2*\b+1)*\s}) {};
+    }
+  }
+
+  % ── Tanner-graph edges from X(1,1) (drawn on top of grid) ──
+  % A terms → q(L) (solid blue)
+  \draw[routeA, -{Latex[length=2mm]}] (X11) -- (L12)
+    node[pos=0.65, left=3pt, below=6pt, text=okBlue!85!black, font=\scriptsize] {$A_2$};
+  \draw[routeA, -{Latex[length=2mm]}] (X11) -- (L13)
+    node[pos=0.85, anchor=west, xshift=2pt, yshift=-2pt, text=okBlue!85!black, font=\scriptsize] {$A_3$};
+
+  % B terms → q(R) (solid red)
+  \draw[routeB, -{Latex[length=2mm]}] (X11) -- (R21)
+    node[pos=0.75, above=1pt, text=okRed!85!black, font=\scriptsize] {$B_2$};
+  \draw[routeB, -{Latex[length=2mm]}] (X11) -- (R31)
+    node[pos=0.55, anchor=north, xshift=3pt, yshift=-1pt, text=okRed!85!black, font=\scriptsize] {$B_3$};
+
+  % ── Highlighted X-check (drawn LAST, on top of everything) ──
+  \node[qx, draw=okPurple!90!black, fill=white,
+        line width=1.25pt, minimum size=7pt] at (X11) {};
+
+  % ── Lattice direction arrows ──
+  \draw[black!25, thick, -{Latex[length=3mm]}, dashed]
+    ({-0.4*\s},{-0.45*\s}) -- ({(2*3+1)*\s+0.45*\s},{-0.45*\s})
+    node[midway, below=2pt, font=\scriptsize, black!45] {$\mathbb{Z}_{\ell}$};
+  \draw[black!25, thick, -{Latex[length=3mm]}, dashed]
+    ({(2*3+1)*\s+0.45*\s},{-0.4*\s}) -- ({(2*3+1)*\s+0.45*\s},{(2*3+1)*\s+0.75*\s})
+    node[midway, right=2pt, font=\scriptsize, black!45] {$\mathbb{Z}_{m}$};
+
+  % ── Coordinate legend (tabular for vertical alignment) ──
+  \node[anchor=north west, font=\small, inner sep=0pt]
+    at ({-0.55*\s},{-1.15*\s}) {%
+    \begin{tabular}{@{}c@{\;}l@{\qquad}c@{\;}l@{}}
+      \raisebox{-0.5pt}{\tikz{\node[qdata,scale=1.2] {};}} & $q(L)$ at $(2a,2b)$ &
+      \raisebox{-0.5pt}{\tikz{\node[qx,scale=1.2] {};}} & $q(X)$ at $(2a\!+\!1,2b)$ \\[5pt]
+      \raisebox{-0.5pt}{\tikz{\node[qz,scale=1.2] {};}} & $q(Z)$ at $(2a,2b\!+\!1)$ &
+      \raisebox{-0.5pt}{\tikz{\node[qr,scale=1.2] {};}} & $q(R)$ at $(2a\!+\!1,2b\!+\!1)$ \\[5pt]
+      \tikz[baseline=0ex]{\fill[okBlue!8] (0,0) rectangle (0.30,0.22);\draw[black!25,line width=0.3pt] (0,0) rectangle (0.30,0.22);} &
+      $A_1$ target row (wraps in $\mathbb{Z}_{\ell}$) &
+      \tikz[baseline=0ex]{\fill[okRed!8] (0,0) rectangle (0.30,0.22);\draw[black!25,line width=0.3pt] (0,0) rectangle (0.30,0.22);} &
+      $B_1$ target col.\ (wraps in $\mathbb{Z}_{m}$) \\[5pt]
+      \tikz[baseline=0ex]{\fill[black!4] (0.01,0.01) rectangle (0.29,0.21);\draw[black!22,dashed,rounded corners=0.5pt] (0,0) rectangle (0.30,0.22);} &
+      \multicolumn{3}{@{}l}{highlighted unit cell $(a,b)=(1,1)$}
+    \end{tabular}};
+
+  \node[anchor=north west, font=\small, inner sep=0pt]
+    at ({-0.55*\s},{-3.15*\s}) {%
+    \begin{tabular}{@{}l@{}}
+      \textcolor{okBlue!85!black}{$A$ family $\to q(L)$:}\;
+      $A_1\!=\!x^3\!=\!(3,0)$,\; $A_2\!=\!y\!=\!(0,1)$,\; $A_3\!=\!y^2\!=\!(0,2)$\\[2pt]
+      \textcolor{okRed!85!black}{$B$ family $\to q(R)$:}\;
+      $B_1\!=\!y^3\!=\!(0,3)$,\; $B_2\!=\!x\!=\!(1,0)$,\; $B_3\!=\!x^2\!=\!(2,0)$
+    \end{tabular}};
+\end{tikzpicture}
+\end{document}

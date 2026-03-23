@@ -1,0 +1,49 @@
+\documentclass[tikz,border=5pt]{standalone}
+\input{figstyle.tex}
+\begin{document}
+\begin{tikzpicture}[x=1cm,y=1cm]
+
+  % Node positions
+  \node[srcA] (a1) at (0.8,3.10) {};
+  \node[srcA] (a2) at (0.8,1.70) {};
+  \node[srcA] (a3) at (0.8,0.30) {};
+  \node[srcB] (b1) at (5.20,3.10) {};
+  \node[srcB] (b2) at (5.20,1.70) {};
+  \node[srcB] (b3) at (5.20,0.30) {};
+
+  \node[anchor=east, text=okBlue!85!black] at ($(a1)+(-0.16,0)$) {$y^3$};
+  \node[anchor=east, text=okBlue!85!black] at ($(a2)+(-0.16,0)$) {$x^2$};
+  \node[anchor=east, text=okBlue!85!black] at ($(a3)+(-0.16,0)$) {$x^3y^3$};
+  \node[anchor=west, text=okRed!85!black] at ($(b1)+(0.16,0)$) {$x^4$};
+  \node[anchor=west, text=okRed!85!black] at ($(b2)+(0.16,0)$) {$x^4y^3$};
+  \node[anchor=west, text=okRed!85!black] at ($(b3)+(0.16,0)$) {$x^5y^3$};
+  \node[text=okBlue!85!black, anchor=south] at (0.8,3.45) {$A=\{y^3,x^2,x^3y^3\}$};
+  \node[text=okRed!85!black, anchor=south] at (5.2,3.45) {$B=\{x^4,x^4y^3,x^5y^3\}$};
+
+  % faint absent A-internal edges
+  \draw[absent] (a1)--(a2);
+  \draw[absent] (a2)--(a3);
+  \draw[absent] (a1) to[bend left=16] (a3);
+
+  % K_{3,3} from B3
+  \foreach \u/\v in {a1/b1,a1/b2,a1/b3,a2/b1,a2/b2,a2/b3,a3/b1,a3/b2,a3/b3}{\draw[kedge] (\u)--(\v);}  
+
+  % triangle in B from B1,B2
+  \draw[triangleedge] (b1)--(b2);
+  \draw[triangleedge] (b2)--(b3);
+  \draw[triangleedge] (b1) to[bend right=16] (b3);
+
+  % matching
+  \draw[matching] (a1)--(b3);
+  \draw[matching] (a2)--(b2);
+  \draw[matching] (a3)--(b1);
+
+  % annotations
+  \node[chip, fill=softBlue, anchor=north west] at (6.15,3.22) {$K_{3,3}$ from round $B_3$};
+  \node[chip, fill=softRed, anchor=north west] at (6.15,2.52) {$\Delta_B$ from rounds $B_1$ and $B_2$};
+  \node[chip, fill=softGreen, anchor=north west] at (6.15,1.82) {highlighted matching has size $\nu_\varphi^X(L_{\mathrm{ref}})=3$};
+
+  \node[anchor=north] at (3.00,-0.40) {$C_{\varphi}^{X}[S_{\mathrm{ref}}]=K_{3,3}\cup \Delta_B$};
+  \node[anchor=north] at (3.00,-0.92) {$d_{\mathrm{eff},X}(\varphi)\le |S_{\mathrm{ref}}|-\nu_\varphi^X(L_{\mathrm{ref}})=6-3=3$};
+\end{tikzpicture}
+\end{document}

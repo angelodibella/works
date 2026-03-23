@@ -1,0 +1,8 @@
+# This file will be populated once the paper is available on arXiv or published.
+cff-version: 1.2.0
+message: "If you use this code, please cite it using the metadata in this file."
+title: "Geometry-induced correlated noise in qLDPC syndrome extraction"
+authors:
+  - family-names: "Di Bella"
+    given-names: "Angelo"
+    orcid: "https://orcid.org/0009-0005-5593-2993"

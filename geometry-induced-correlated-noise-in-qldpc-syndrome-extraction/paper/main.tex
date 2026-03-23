@@ -1,0 +1,1247 @@
+\documentclass[
+aps,
+prx,
+10pt,
+twocolumn,
+groupedaddress,
+longbibliography,
+nofootinbib,
+floatfix
+]{revtex4-2}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{bm}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage[ruled,noend]{algorithm2e}
+\SetAlgoNlRelativeSize{0}
+\SetAlgoSkip{}
+\DontPrintSemicolon
+\SetAlgorithmName{ALGORITHM}{ALGORITHM}{List of Algorithms}
+\SetAlCapSty{}
+\SetAlCapNameFnt{\footnotesize}
+\SetAlCapFnt{\footnotesize}
+\renewcommand{\thealgocf}{\arabic{algocf}}
+\setlength{\algoheightrule}{0.4pt}
+\makeatletter
+\renewcommand{\algocf@capseparator}{.~}
+\makeatother
+\setlength{\algotitleheightrule}{0.4pt}
+\usepackage{enumitem}
+\usepackage{silence}
+\WarningFilter{nameref}{The definition of}
+\WarningFilter{rerunfilecheck}{File}
+\WarningFilter{latex}{Label(s) may have changed}
+\hbadness=10000 % suppress revtex front-matter underfull warnings
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue,hypertexnames=false}
+\usepackage{orcidlink}
+\pdfstringdefDisableCommands{\def\bb#1{[[#1]]}}
+
+\input{generated/numbers.tex}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+\newtheorem{assumption}{Assumption}
+\renewcommand{\qedsymbol}{$\blacksquare$}
+
+\DeclareMathOperator{\supp}{supp}
+\DeclareMathOperator{\wt}{wt}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\kerop}{ker}
+\DeclareMathOperator{\row}{row}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+\newcommand{\F}{\mathbb{F}_2}
+\newcommand{\I}{\hat{\mathbb{I}}}
+\newcommand{\Ew}{\mathcal{E}}
+\newcommand{\LX}{\mathcal{L}_{X,d_X}}
+\newcommand{\LZ}{\mathcal{L}_{Z,d_Z}}
+\newcommand{\RX}{\mathcal{R}_X}
+\newcommand{\TL}{T_L}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\bb}[1]{\ensuremath{\left[\!\left[#1\right]\!\right]}}
+\newcommand{\Hx}{\hat H_{\times}}
+\newcommand{\Hxt}{\hat H_{\times}^{(t)}}
+\newcommand{\ket}[1]{\lvert #1 \rangle}
+
+\begin{document}
+
+\title{Geometry-induced correlated noise in qLDPC syndrome extraction}
+
+\author{Angelo Di Bella\,\orcidlink{0009-0005-5593-2993}}
+\affiliation{Cavendish Laboratory, University of Cambridge,\\JJ Thomson Ave, Cambridge CB3 0HE, United Kingdom}
+\email{ad2395@cam.ac.uk}
+
+\begin{abstract}
+With code and syndrome-extraction schedule fixed, can routed geometry alone change the correlated fault model enough to impact logical performance? Starting from a geometry-conditioned same-tick interaction Hamiltonian, we derive a controlled retained single-and-pair data-fault model for bivariate-bicycle (BB) layouts. Two geometry metrics emerge in two kernel regimes: under a crossing-local diagnostic kernel, a matching argument reduces the support-level effective fault weight; under strictly positive distance-decay kernels, support graphs saturate for supports whose pairs appear in the retained rounds, and weighted exposure becomes the discriminating quantity. Circuit-level Monte Carlo on the \bb{72,12,6} and \bb{144,12,12} benchmarks confirms that a biplanar bounded-thickness layout suppresses the monomial single-layer embedding penalty, with weighted exposure tracking logical error rate across \baselineCorrelationN{} operating points (Spearman $\rho_\mathrm{S}=\baselineSpearmanRho$). A single-layer logical-family optimization on BB72 reduces worst-case exposure by \bbSeventyTwoLAImprovementPct\% and lowers logical error rate in the tested power-law window. Routed geometry should be optimized together with code, schedule, and decoder.
+\end{abstract}
+
+\maketitle
+
+\section{Introduction}
+\label{sec:intro}
+
+Quantum low-density parity-check (qLDPC) codes---stabilizer codes whose parity-check matrices have bounded row and column weight---couple sparse stabilizer structure to finite-rate families, practical syndrome-extraction protocols, and improved decoders. Bivariate-bicycle (BB) codes provide concrete memory benchmarks with explicit layer decompositions and finite-length data~\cite{calderbank_shor_1996,steane_1996,breuckmann_eberhardt_2021,bravyi_memory_2024}. Long-range-coupled BB experiments make routing geometry a device-level variable rather than a schematic choice~\cite{wang_demo_2025}. Existing architecture work usually optimizes connectivity, routing depth, or hardware integration, but does not carry a fixed code family and extraction schedule through the full chain from routed geometry to correlated fault model to logical performance. Two embeddings of the same Tanner graph (the bipartite graph connecting data qubits to parity checks) can change the separations of simultaneously active gate blocks, altering pair-event rates, support-level effective distance, finite-coupling failure modes, and decoder mismatch without changing the stabilizer algebra.
+
+Recent circuit-centric analyses treat fault tolerance as a property of both the syndrome-extraction circuit and the static parity-check matrices. Residual-error metrics for syndrome-extraction design~\cite{strikis_sec_2026} and spacetime-code viewpoints~\cite{aitchison_beri_2025,pesah_spacetime_2025} frame the general setting; Aharonov, Kitaev, and Preskill (AKP) give the asymptotic criterion for summable long-range Hamiltonian noise~\cite{akp_2006}; surface-code crosstalk studies quantify how correlated couplings alter logical behavior~\cite{zhou_crosstalk_2025}; microscopic superconducting-qubit analyses show that interaction profiles depend on layout, couplers, shielding, and calibration~\cite{pettersson_zz_2024,aguila_flux_2025}; and qLDPC decoding now includes correlated and BB-specific directions alongside belief propagation with ordered statistics decoding (BP+OSD)~\cite{roffe_bp_osd_2020,ducrest_capbp_2024,hillmann_lsd_2025,mueller_relaybp_2025,maan_correlated_2026,sahay_matching_2026}. Our scope is narrower. This paper asks whether routed geometry, by itself, changes the leading correlated-fault structure of a fixed routed CSS extraction circuit. Under an interaction-dominated same-tick model, it does: geometry changes the retained pair-fault structure, which changes support-level effective weight and finite-coupling logical performance. Table~\ref{tab:related-work} locates this paper within recent qLDPC architecture work.
+
+\begin{table}[!htbp]
+\caption{Comparison with recent qLDPC architecture work. Each column indicates whether the reference treats routed geometry, correlated noise, a circuit-level analysis, and/or a geometry-derived metric.}\label{tab:related-work}
+\footnotesize
+\renewcommand{\arraystretch}{1.2}%
+\begin{ruledtabular}
+\begin{tabular}{ccccc}
+Reference & Geometry & Corr.\ noise & Circuit & Metric \\
+\colrule
+\onlinecite{bravyi_memory_2024} & layer split & & threshold & \\
+\onlinecite{berthusen_local_2025} & 2D-local & & threshold & connectivity \\
+\onlinecite{mathews_multilayer_2025} & multilayer & & & route length \\
+\onlinecite{wang_demo_2025} & hardware & device & experiment & \\
+\onlinecite{strikis_sec_2026} & & & residual error & \\
+\onlinecite{zhou_crosstalk_2025} & & crosstalk & $\Delta$threshold & \\
+\onlinecite{maan_correlated_2026} & & corr.\ prior & decoder & \\
+This work & routed & kernel model & Monte Carlo & exposure \\
+\end{tabular}
+\end{ruledtabular}
+\end{table}
+
+We formulate the interaction model, carry out the two-block Pauli twirl, and derive the retained single-and-pair data-fault channel underlying the leading-order simulation emulator. Under the single-location assumption, we prove that the support-level effective fault weight is $|S|-\nu$; for the worked BB72 support, this drops from $6$ to $3$ in the monomial embedding and remains unchanged in the bounded-thickness diagnostic. We then show that strictly positive kernels saturate the support graph when every support pair appears in at least one retained round, introduce weighted exposure $\Ew_{\phi}^{\sigma}(L)$ as the finite-coupling quantity that distinguishes embeddings, and derive the planar summability threshold $\alpha>2$ and an AKP-inspired smallness criterion for regularized algebraic kernels. Finally, we formulate a logical-aware single-layer objective over the BB72 pure-$q(L)$ logical family, enumerate its \bbSeventyTwoPureLFamilyCount{} weight-$6$ supports, and reduce the maximum weighted exposure by \bbSeventyTwoLAImprovementPct\% relative to the monomial layout.
+BB72 serves as the main validation platform, while BB144 provides a scaling check. Figure~\ref{fig:pipeline} summarizes the geometry-to-performance chain. Sections~\ref{sec:model}--\ref{sec:theory} define the geometry-conditioned retained model and its support-level consequences; Section~\ref{sec:logical-aware} turns those consequences into a single-layer design objective; Section~\ref{sec:results} tests the resulting claims at circuit level. Appendix~\ref{app:tables} collects the claim taxonomy and notation summary; Appendices~\ref{app:geometry}--\ref{app:hardware} provide supplementary figures, diagnostics, and hardware-data comparisons.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.97\textwidth]{figures/pipeline_variant_a.pdf}
+\caption{Geometry-to-noise-to-performance pipeline. The left block contrasts the single-layer monomial embedding with the biplanar bounded-thickness construction; the central boxes track the microscopic Hamiltonian, twirl, retained sector model, and support-level graph objects; the rightmost box records the circuit-level logical performance tested on BB72 and BB144. The two analytical branches beneath the support-level box distinguish the crossing-local diagnostic ($\kappa_{\times}$) from the strictly-positive-kernel regime ($\kappa>0$).}
+\label{fig:pipeline}
+\end{figure*}
+
+\section{Microscopic model and retained effective channel}
+\label{sec:model}
+
+This section (i) decomposes a general two-block geometry perturbation into local and inter-block pieces, (ii) specifies the interaction-dominated regime studied here, (iii) derives the same-tick twirl via the many-pair parity expansion, and (iv) reduces that channel to a controlled retained single-and-pair model for the BB schedule.
+
+We study repeated syndrome extraction for Calderbank--Shor--Steane (CSS) codes~\cite{calderbank_shor_1996,steane_1996}, in which $X$-type and $Z$-type errors are corrected independently by separate parity-check matrices $H_X$ and $H_Z$ satisfying $H_X H_Z^\top=0$ over the binary field $\F$. A code encoding $k$ logical qubits into $n$ physical qubits with distance $d$ (the minimum weight of a nontrivial logical operator) is denoted $\bb{n,k,d}$. A bivariate-bicycle (BB) code over the group algebra $\F[\mathbb{Z}_\ell\times\mathbb{Z}_m]$---the algebra of formal $\F$-linear combinations of elements $x^a y^b$ in the abelian group $\mathbb{Z}_\ell\times\mathbb{Z}_m$---has $n=2\ell m$ data qubits partitioned into four registers $q(X)$, $q(L)$, $q(R)$, and $q(Z)$ of size $M:=\ell m$, with circulant parity-check matrices $A$ and $B$ (each determined by three monomial terms in the group algebra) satisfying $AB^\top=BA^\top$~\cite{bravyi_memory_2024}. The code-independent constructions below apply to any routed CSS schedule; the numerical study uses the depth-$8$ BB schedule and layer decomposition of Ref.~\onlinecite{bravyi_memory_2024}. In the $X$ sector, effective data faults arise on $q(L)$ during the $q(L)\to q(Z)$ rounds determined by the monomial terms of $B$; with $B=B_1+B_2+B_3$, these are the rounds labeled $B_1$, $B_2$, and $B_3$.
+
+\subsection{Open system and routed geometry}
+
+The microscopic starting point is the open-system Hamiltonian decomposition
+\begin{equation}
+\hat H(t)=\hat H_{\mathrm S}(t)+\hat H_{\mathrm B}+\hat H_{\mathrm{SB}}(t)+\hat\varepsilon(t),
+\label{eq:open-system-main}
+\end{equation}
+where $\hat H_{\mathrm S}(t)$ implements the ideal syndrome-extraction schedule, $\hat H_{\mathrm B}$ is the bath Hamiltonian, $\hat H_{\mathrm{SB}}(t)$ is the system–bath coupling, and $\hat\varepsilon(t)$ collects coherent system-only imperfections. The geometry-induced coherent contribution is denoted by $\Hx(t)$ and treated as part of $\hat\varepsilon(t)$, so routed separation controls a distinct part of the coherent error budget.
+
+An embedding $\phi$ fixes qubit positions and a routed curve for each active two-qubit gate block. All in-plane distances are measured in units of the placement pitch. A bounded-thickness layout uses finitely many parallel routing planes separated by a fixed layer spacing, and same-tick pair couplings depend only on the routed closest approach.
+
+\begin{assumption}[Tick structure and routed separations]
+A tick is a time window of duration $\tau$ during which a set $E_t$ of disjoint two-qubit gates is executed, together with any accompanying single-qubit gates, idles, measurements, or resets. Each element $e\in E_t$ is an unordered pair of qubit indices, denoting the two qubits acted on by the gate; disjointness means $e\cap e'=\varnothing$ for distinct $e,e'\in E_t$. For a routed embedding $\phi$, the separation between simultaneously active gate blocks is the finite geometric quantity $d_{\phi}(e,e')\ge 0$.
+\end{assumption}
+
+Before specifying the microscopic perturbation, we record the general structure available on two disjoint active blocks.
+
+\begin{proposition}[General two-block decomposition]
+\label{prop:two-block-decomp}
+Let $\mathcal{H}_e$ and $\mathcal{H}_{e'}$ be the Hilbert spaces of two disjoint active gate blocks with dimensions $D_e$ and $D_{e'}$, and let $\hat K$ be any Hermitian operator on $\mathcal{H}_e\otimes\mathcal{H}_{e'}$. Then there exists a unique decomposition
+\begin{equation}
+\hat K = c\,\I + \hat A_e\otimes\I_{e'} + \I_e\otimes\hat B_{e'} + \hat C_{ee'},
+\label{eq:two-block-decomp}
+\end{equation}
+where $c\in\mathbb{R}$, the local operators $\hat A_e$ and $\hat B_{e'}$ are traceless Hermitian on their respective blocks, and $\hat C_{ee'}$ is Hermitian with vanishing partial traces: $\operatorname{tr}_{e'}\hat C_{ee'}=0$ and $\operatorname{tr}_e\hat C_{ee'}=0$.
+\end{proposition}
+
+\begin{proof}
+Define $c=(D_e D_{e'})^{-1}\operatorname{tr}\hat K$, \; $\hat A_e=D_{e'}^{-1}\operatorname{tr}_{e'}\hat K - c\,\I_e$, \; $\hat B_{e'}=D_e^{-1}\operatorname{tr}_e\hat K - c\,\I_{e'}$, and $\hat C_{ee'}=\hat K - c\,\I - \hat A_e\otimes\I_{e'} - \I_e\otimes\hat B_{e'}$, where $\operatorname{tr}_e$ and $\operatorname{tr}_{e'}$ denote the partial traces over the respective subsystems. Partial traces preserve Hermiticity, so all four pieces are Hermitian. By construction $\operatorname{tr}\hat A_e=0$, $\operatorname{tr}\hat B_{e'}=0$, and both partial traces of $\hat C_{ee'}$ vanish. For uniqueness, suppose $0=\tilde c\,\I+\tilde{\hat A}\otimes\I+\I\otimes\tilde{\hat B}+\tilde{\hat C}$ with the same constraints; taking the total trace gives $\tilde c=0$, taking $\operatorname{tr}_{e'}$ gives $\tilde{\hat A}=0$, taking $\operatorname{tr}_e$ gives $\tilde{\hat B}=0$, and therefore $\tilde{\hat C}=0$.
+\end{proof}
+
+Proposition~\ref{prop:two-block-decomp} separates any geometry-induced perturbation into a global phase~($c$), local block responses~($\hat A_e$, $\hat B_{e'}$), and an inter-block interaction~($\hat C_{ee'}$). Whether the local or the inter-block piece dominates is a physical question determined by the microscopic coupling mechanism.
+
+\begin{corollary}[First-order local-field reduction]
+\label{cor:local-field}
+If the same-tick geometry effect is a state-independent stray field of amplitude $g(d)$ to which each block responds linearly through Hermitian operators $\hat R_e$ and $\hat R_{e'}$, then to first order in $g(d)$ the inter-block term vanishes and
+\begin{equation}
+\hat K(d)=g(d)\!\left(\hat R_e\otimes\I_{e'}+\I_e\otimes\hat R_{e'}\right)+c(d)\,\I+O\!\left(g(d)^2\right).
+\label{eq:local-field}
+\end{equation}
+Choosing the dominant response channel on each block, $\hat R_e=\hat P_e$ and $\hat R_{e'}=\hat P_{e'}$, and identifying $g(d)=J_0\kappa(d)$, gives the additive-local Hamiltonian $J_0\kappa(d)(\hat P_e+\hat P_{e'})$---the $J_1$-only limit of the general family in Remark~\ref{rem:general-family}.
+\end{corollary}
+
+\begin{proof}
+A state-independent field acts on each block independently: the first-order perturbation on block $e$ cannot act nontrivially on $\mathcal{H}_{e'}$, so it takes the form $\hat A_e(d)\otimes\I_{e'}$, and likewise for $e'$. Linearity in the weak field gives proportionality to $g(d)$; Hermiticity forces the response operators to be Hermitian.
+\end{proof}
+
+\begin{remark}
+\label{rem:general-family}
+The general two-block perturbation compatible with Proposition~\ref{prop:two-block-decomp} takes the two-parameter form $\hat K(d)=J_1(d)(\hat P_e+\hat P_{e'})+J_2(d)\,\hat P_e\otimes\hat P_{e'}$. The $J_1$ (additive-local) term produces only independent single-block faults under the twirl, so geometry-induced pair data faults appear only at $O(\theta^4)$ from the joint two-block event. The $J_2$ (interaction) term produces correlated pair faults directly at $O(\theta^2)$. The present model retains only the interaction term ($J_1=0$), which dominates the correlated-fault budget in the interaction-dominated regime. The additive-local limit ($J_2=0$) is the opposite regime; Corollary~\ref{cor:local-field} gives the conditions under which it applies.
+\end{remark}
+
+The coefficients $J_1$ and $J_2$ in Remark~\ref{rem:general-family} are determined by trace projection onto the Pauli basis. For any two-block perturbation $\hat K$ on $\mathcal{H}_e\otimes\mathcal{H}_{e'}$, the local and interaction amplitudes are
+\begin{align}
+J_1(d) &= (D_e D_{e'})^{-1}\operatorname{tr}\!\left[\hat K(d)\,(\hat P_e\otimes\I_{e'})\right],\label{eq:J1-proj}\\
+J_2(d) &= (D_e D_{e'})^{-1}\operatorname{tr}\!\left[\hat K(d)\,(\hat P_e\otimes\hat P_{e'})\right],\label{eq:J2-proj}
+\end{align}
+where $\operatorname{tr}$ is the trace over both subsystems. Assumption~2 sets $J_1=0$ and identifies $J_2(d)=J_0\kappa(d)$. In a measured or simulated perturbation, Eqs.~\eqref{eq:J1-proj}--\eqref{eq:J2-proj} determine both amplitudes from the extracted $\hat K_{\mathrm{eff}}$ and indicate which regime applies.
+
+The decomposition is tested numerically on a four-qubit two-block motif in Appendix~\ref{app:microscopic} (Fig.~\ref{fig:two-block-norms}): for the pure stray-drive perturbation ($J_2=0$), the inter-block norm vanishes identically; for the mixed regime ($J_2/J_1=0.1$), it is an order of magnitude smaller than the local pieces but dominates the leading correlated-pair sector at $O(\theta^2)$ versus $O(\theta^4)$. The simulations in this work use the pure interaction model ($J_1=0$).
+
+\begin{assumption}[Proximity kernel and inter-block interaction]
+The geometry-induced perturbation between simultaneously active disjoint blocks $e,e'\in E_t$ is modeled by the interaction term of the general two-block family (Remark~\ref{rem:general-family}): a dimensionless, nonnegative, monotonically nonincreasing proximity kernel $\kappa$ with $\kappa(0)=1$ and a coupling scale $J_0>0$ with units of inverse time give the microscopic Hamiltonian
+\begin{equation}
+\Hx(e,e')=J_0\,\kappa\left(d_{\phi}(e,e')\right)\,\hat P_e\otimes\hat P_{e'},
+\label{eq:pair-ham-main}
+\end{equation}
+where $\hat P_e$ and $\hat P_{e'}$ are traceless Hermitian involutions ($\hat P^2=\I$, $\hat P^{\dagger}=\hat P$) on the two active gate blocks, each determined by the gate type and block role in the schedule. The tensor product $\hat P_e\otimes\hat P_{e'}$ is itself a traceless Hermitian involution on the joint block space.
+\end{assumption}
+
+In the implemented BB schedule, the sector-relevant block Paulis are:
+\begin{center}
+\footnotesize
+\renewcommand{\arraystretch}{1.2}%
+\begin{tabular}{lll}
+Sector & Block role & $\hat P_e$ \\
+\hline
+$X$ & $q(L)\to q(Z)$ CNOT & $X_{\mathrm{data}}\otimes I_{\mathrm{anc}}$ \\
+$Z$ & $q(X)\to q(R)$ CNOT & $Z_{\mathrm{anc}}\otimes Z_{\mathrm{data}}$ \\
+\end{tabular}
+\end{center}
+In the $X$ sector, $\hat P_e$ applies $X$ to the $q(L)$ data qubit (the CNOT control); in the $Z$ sector, it applies $Z$ to the $q(R)$ data qubit (the CNOT target). Theorem~\ref{thm:schedule-prop} below uses these explicit choices.
+
+The microscopic kernel depends on the architecture, so we work with a kernel family rather than a single functional form, consistent with recent crosstalk and superconducting-qubit studies showing that residual inter-block interaction profiles depend on layout, couplers, shielding, and calibration~\cite{zhou_crosstalk_2025,pettersson_zz_2024,aguila_flux_2025}. Equation~\eqref{eq:pair-ham-main} retains the interaction piece of the general two-block decomposition (Remark~\ref{rem:general-family}): routed separation sets the pair-coupling strength, while the kernel profile remains phenomenological. Every formal statement below is conditional on these assumptions; the simulations test the retained consequences.
+
+Summing Eq.~\eqref{eq:pair-ham-main} over all unordered simultaneously active block pairs in a tick gives the tickwise geometry Hamiltonian
+\begin{equation}
+\Hxt
+:=
+J_0
+\sum_{\{e,e'\}\,\subseteq \,E_t}
+\kappa\left(d_{\phi}(e,e')\right)\,
+\hat P_e\otimes\hat P_{e'}.
+\label{eq:tick-ham-main}
+\end{equation}
+Because the gate blocks in $E_t$ are disjoint, every pair of same-tick generators commutes: $[\hat P_e\otimes\hat P_{e'},\,\hat P_f\otimes\hat P_{f'}]=0$ for all $\{e,e'\},\{f,f'\}\subseteq E_t$. Let $A_t=\{\{e,e'\}\subseteq E_t\}$ denote the set of simultaneously active pairs and $\hat S_a=\hat P_e\otimes\hat P_{e'}$. The same-tick unitary factorizes exactly:
+\begin{equation}
+\hat U_t = \prod_{a\in A_t} e^{-i\theta_a \hat S_a} = \prod_{a\in A_t}\!\left(\cos\theta_a\,\I - i\sin\theta_a\,\hat S_a\right).
+\label{eq:tick-factorize}
+\end{equation}
+Since each $\hat S_a^2=\I$, expanding the product gives an exact sum over subsets $B\subseteq A_t$:
+\begin{equation}
+\hat U_t = \sum_{B\subseteq A_t} \alpha_B(\theta)\,\hat S_B, \qquad \hat S_B := \prod_{a\in B}\hat S_a,
+\label{eq:parity-expansion}
+\end{equation}
+where $\alpha_\varnothing = \prod_a \cos\theta_a$ and $\alpha_B = (-i)^{|B|}\prod_{a\in B}\sin\theta_a\prod_{a\notin B}\cos\theta_a$ for $B\neq\varnothing$. Each $\hat S_B$ is a product of commuting involutions and is therefore a Pauli monomial on the active blocks. Two distinct subsets $B\neq B'$ may yield the same monomial $\hat S_B=\hat S_{B'}$ if block-Pauli factors cancel; the full-tick Pauli twirl groups such collisions:
+\begin{equation}
+\mathcal T(\hat U_t\,\cdot\,\hat U_t^\dagger) = \sum_{\hat Q}\left|\sum_{\substack{B\subseteq A_t\\\hat S_B=\hat Q}} \alpha_B(\theta)\right|^2\hat Q\,\cdot\,\hat Q,
+\label{eq:tick-twirl}
+\end{equation}
+where the outer sum runs over distinct Pauli monomials $\hat Q$ on the active blocks. At leading order, each single-pair term ($|B|=1$) produces a distinct monomial $\hat S_{\{a\}}$, so the single-pair probability is $|\alpha_{\{a\}}|^2 = \sin^2\theta_a\prod_{b\neq a}\cos^2\theta_b = \sin^2\theta_a + O(\Theta_t^4)$. All multi-pair terms and cross-subset interference contribute at $O(\Theta_t^4)$. The retained model is the leading-order restriction of this exact expansion.
+
+The total same-tick \emph{block exposure} of gate block $e$ is
+\begin{equation}
+\eta_e^{(t)}(\phi)  := \sum_{\substack{e'\in \,E_t \\ e'\neq \,e}}\kappa\left(d_{\phi}(e,e')\right).
+\label{eq:eta-main}
+\end{equation}
+We use block exposure for AKP comparisons and layout audits; the distinct \emph{support exposure} $\Ew_\phi^\sigma(L)$, defined in Sec.~\ref{sec:theory}, aggregates retained pair weights over a logical support.
+
+\subsection{Pauli twirl and two-block corollary}
+
+For a single simultaneously active pair $e,e'\in E_t$, define the dimensionless phase
+\begin{equation}
+\theta(d):=\tau J_0\kappa(d),
+\end{equation}
+so that the corresponding pair unitary is
+\begin{equation}
+\hat U_{e,e'}=\exp\left[-i\theta(d)\,\hat P_e\otimes\hat P_{e'}\right].
+\label{eq:block-unitary}
+\end{equation}
+Let $\mathcal E_{e,e'}(\hat\rho):=\hat U_{e,e'}\hat\rho\,\hat U_{e,e'}^{\dagger}$ denote the corresponding unitary channel. Let $\mathcal T$ denote the Pauli twirl on $k$ qubits: the uniform average $\mathcal T(\mathcal E)(\hat\rho)=4^{-k}\sum_{\hat Q\in\mathcal P_k}\hat Q\,\mathcal E(\hat Q\hat\rho\hat Q)\,\hat Q$, where $\mathcal P_k=\{I,X,Y,Z\}^{\otimes k}$ is the $k$-qubit Pauli group modulo phases.
+
+\begin{theorem}[General single-block Pauli twirl]\footnote{Under randomized compiling~\cite{wallman_emerson_2016}, the averaged channel over Pauli frames is exactly $\mathcal T(\mathcal E)$, so the twirl describes the realized average channel rather than an approximation.}
+\label{thm:general-twirl}
+Let $\hat U=e^{-i\theta \hat P}$ on $k$ qubits, where $\hat P$ is a Hermitian involution ($\hat P^2=\hat{\mathbb{I}}$ and $\hat P^{\dagger}=\hat P$). Then
+\begin{equation}
+\mathcal T\left(\hat U\hat\rho\,\hat U^{\dagger}\right)=\sum_{\hat R\in\mathcal P_k}p_{\hat R}\,\hat R\hat\rho\hat R,
+\label{eq:general-twirl}
+\end{equation}
+with $p_{\hat R}=4^{-k}\left|\operatorname{tr}\left(\hat R\hat U\right)\right|^2$. Using $\hat U=\cos\theta\,\hat{\mathbb{I}}-i\sin\theta\,\hat P$:
+\begin{align}
+p_{\hat{\mathbb{I}}}&=\cos^2\theta+4^{-k}\sin^2\theta\left|\operatorname{tr}\hat P\right|^2,\label{eq:pI}\\
+p_{\hat R}&=4^{-k}\sin^2\theta\left|\operatorname{tr}\left(\hat R\hat P\right)\right|^2\quad(\hat R\neq\hat{\mathbb{I}}).\label{eq:pR}
+\end{align}
+If $\hat P$ is traceless, the total non-identity Pauli mass is $\sum_{\hat R\neq\hat{\mathbb{I}}}p_{\hat R}=\sin^2\theta$.
+\end{theorem}
+
+\begin{proof}
+The Pauli-twirl identity gives $p_{\hat R}=4^{-k}|\operatorname{tr}(\hat R\hat U)|^2$. Substituting $\hat U=\cos\theta\,\hat{\mathbb{I}}-i\sin\theta\,\hat P$ yields $\operatorname{tr}(\hat R\hat U)=\cos\theta\operatorname{tr}\hat R-i\sin\theta\operatorname{tr}(\hat R\hat P)$. For $\hat R=\hat{\mathbb{I}}$, $\operatorname{tr}\hat R=2^k$, yielding Eq.~\eqref{eq:pI}. For $\hat R\neq\hat{\mathbb{I}}$, $\operatorname{tr}\hat R=0$, giving Eq.~\eqref{eq:pR}. If $\operatorname{tr}\hat P=0$ then $p_{\hat{\mathbb{I}}}=\cos^2\theta$ and $\sum_{\hat R\neq\hat{\mathbb{I}}}p_{\hat R}=\sin^2\theta$ by normalization.
+\end{proof}
+
+Since $\hat P_e\otimes\hat P_{e'}$ is a traceless Hermitian involution on the joint block space (Assumption~2), Theorem~\ref{thm:general-twirl} applies directly:
+
+\begin{corollary}[Interaction two-block twirl]
+\label{cor:twirl}
+If $\hat P_e$ and $\hat P_{e'}$ are traceless Pauli operators on disjoint blocks and $p(d)=\sin^2\theta(d)$, then
+\begin{equation}
+\mathcal T\left(\mathcal E_{e,e'}\right)=(1-p)\,\mathrm{Id}+p\,\mathcal P_{ee'},
+\label{eq:twirled-block}
+\end{equation}
+where $\mathcal P_{ee'}(\hat\rho)=(\hat P_e\otimes\hat P_{e'})\hat\rho\,(\hat P_e\otimes\hat P_{e'})$ is the correlated pair-fault channel.
+\end{corollary}
+
+\begin{proof}
+$\hat P_e\otimes\hat P_{e'}$ is traceless and satisfies $(\hat P_e\otimes\hat P_{e'})^2=\I$, so Theorem~\ref{thm:general-twirl} gives $p_{\I}=\cos^2\theta$ and $p_{\hat P_e\otimes\hat P_{e'}}=\sin^2\theta$. All other Pauli weights vanish by orthogonality.
+\end{proof}
+
+Under the interaction model, each simultaneously active pair produces a correlated fault on both blocks with probability $p(d)=\sin^2\theta(d)=O(\theta^2)$. This is the leading geometry-induced effect: single-block faults arise only from the local baseline noise, not from the inter-block coupling. The data-level model used in the simulations appears after propagation through the syndrome cycle, ancilla elimination, and sector restriction.
+
+We therefore distinguish three geometry-dependent objects throughout the paper:
+\begin{enumerate}[label=(\roman*),leftmargin=2em]
+\item the microscopic Hamiltonian amplitude~$J_0\kappa(d)$, or equivalently the dimensionless phase~${\theta(d)=\tau J_0\kappa(d)}$;
+\item the twirled pair-fault probability~${p(d)=\sin^2\!\theta(d)}$, giving the probability that the correlated $\hat P_e\otimes\hat P_{e'}$ fault occurs on a simultaneously active pair at separation $d$;
+\item the retained sector coefficient~$q_{\kappa}(d)$, obtained by propagating the twirled block channel through one syndrome-extraction round via exact Clifford conjugation, eliminating ancillas, restricting to a single CSS sector, and retaining the resulting pair-data Pauli coefficient. Because the extraction circuit is Clifford and the twirled channel is diagonal in the Pauli basis, the propagation is an exact finite computation evaluated numerically for each kernel; $q_\kappa(d)$ is not a closed-form function of $p(d)$ alone, but it is exactly determined by the schedule and the microscopic angles.
+\end{enumerate}
+The AKP summability statements below concern the microscopic amplitudes before twirling, whereas the stabilizer simulations use retained effective coefficients after propagation and truncation. In the production dataset, we set $\tau=1$—and, for the regularized algebraic kernel, $r_0=1$—so the plotted parameter $J_0$ is the dimensionless product $J_0\tau$.
+
+\subsection{Crossing kernel and routed geometry}
+
+The crossing kernel is an idealized combinatorial diagnostic (not a physical crosstalk law):
+\begin{equation}
+\kappa_{\times}(d)=\mathbf 1_{d\,=\,0}.
+\end{equation}
+It keeps only projected same-round crossings, so the support graph becomes purely combinatorial. In a straight-line four-column embedding, let $\sigma_L,\sigma_Z\in S_M$—the symmetric group on $M=\ell m$ indices—denote the permutations that assign vertical positions to the $q(L)$ and $q(Z)$ rows, respectively. The relevant same-round $q(L)\to q(Z)$ edge between data row $\alpha$ and its round-$r$ target $B_r\alpha$ (the image of $\alpha$ under the monomial action of the $r$-th term of $B$) crosses the one between $\beta$ and $B_r\beta$ if and only if
+\begin{equation}
+\left(\sigma_L(\alpha)-\sigma_L(\beta)\right)
+\left(\sigma_Z(B_r\alpha)-\sigma_Z(B_r\beta)\right)<0.
+\label{eq:cross-criterion}
+\end{equation}
+This is the order-reversal criterion for segments joining two parallel lines.
+
+In the implemented diagnostic, the biplanar bounded-thickness embedding has no such crossings by construction: the relevant $B_1$, $B_2$, and $B_3$ rounds are routed in separate layers according to the layer split of Ref.~\onlinecite{bravyi_memory_2024}, and the implemented same-round routes are planar within each layer. The crossing-local theorem, therefore, assigns no support-level reduction to the bounded-thickness embedding.
+
+\subsection{Retained sector model and embedding families}
+
+Fix a CSS sector $\sigma\in\{X,Z\}$: the $X$ sector concerns $X$-type data faults detected by $Z$-check measurements, and the $Z$ sector concerns the converse. After propagation through one syndrome-extraction round, elimination of the ancilla qubits (by tracing over their measurement outcomes), and restriction to the chosen sector, we retain the nonzero single-data and pair-data contributions and write the effective model as
+\begin{equation}
+\mathcal N^{\sigma}_{\phi}=\left(1-\sum_i a_i^{\sigma}-\sum_{i\,<\,j} b_{ij}^{\sigma}\right)\mathrm{Id}+\sum_i a_i^{\sigma}\,\mathcal P_i^{\sigma}+\sum_{i\,<\,j} b_{ij}^{\sigma}\,\mathcal P_{ij}^{\sigma},
+\label{eq:retained-channel}
+\end{equation}
+Here $\mathrm{Id}$ denotes the identity channel $\mathrm{Id}(\hat\rho)=\hat\rho$ (not the identity operator $\I$), $\mathcal P_i^{\sigma}$ applies the sector-relevant single-qubit Pauli on data location $i$, $\mathcal P_{ij}^{\sigma}$ applies the corresponding pair operator on data locations $i$ and $j$, and all coefficients $a_i^{\sigma}\ge 0$, $b_{ij}^{\sigma}\ge 0$ are nonnegative retained Pauli probabilities summing to at most $1$. Equation~\eqref{eq:retained-channel} defines the full retained \emph{geometry-induced} channel after one-round propagation, ancilla elimination, and sector restriction; the complete extraction map is obtained by composing this channel with the baseline local circuit noise of Sec.~\ref{sec:syndrome}. The $b_{ij}^{\sigma}$ are the pair weights used directly as graph edges in Sec.~\ref{sec:theory}. The truncation to single and pair terms is controlled by the following bound on the discarded higher-weight Pauli mass.
+
+\begin{proposition}[Controlled low-body truncation]
+\label{prop:truncation}
+Let $\mathcal{E}^{\sigma}_{\phi}=\sum_P p_P\,\mathcal{U}_P$ be the exact Pauli-twirled data channel after full circuit propagation, ancilla elimination, and sector restriction, where $\mathcal{U}_P(\hat\rho)=\hat P\hat\rho\hat P$ and $P$ ranges over sector-relevant data Paulis. Define the retained channel $\mathcal{E}^{\sigma}_{\phi,\le 2}$ by absorbing all weight-$\ge 3$ mass into the identity term, and let $M_{\ge 3}:=\sum_{\wt(P)\ge 3}p_P$. Then, in the diamond norm $\lVert\cdot\rVert_{\diamond}$ (the completely bounded trace norm, the standard worst-case distance between quantum channels),
+\begin{equation}
+\left\lVert\mathcal{E}^{\sigma}_{\phi}-\mathcal{E}^{\sigma}_{\phi,\le 2}\right\rVert_{\diamond}\le 2\,M_{\ge 3}.
+\label{eq:truncation-bound}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+The difference channel is $\sum_{\wt(P)\ge 3}p_P(\mathcal{U}_P-\mathcal{I})$. By the triangle inequality, $\lVert\mathcal{E}^{\sigma}_{\phi}-\mathcal{E}^{\sigma}_{\phi,\le 2}\rVert_{\diamond}\le\sum_{\wt(P)\ge 3}p_P\,\lVert\mathcal{U}_P-\mathcal{I}\rVert_{\diamond}$. Each $\mathcal{U}_P$ and $\mathcal{I}$ is a quantum channel, so $\lVert\mathcal{U}_P-\mathcal{I}\rVert_{\diamond}\le 2$, giving the bound.
+\end{proof}
+
+The following theorem strengthens the truncation argument for the BB extraction schedule.
+
+\begin{theorem}[Schedule-level weight-$2$ propagation]
+\label{thm:schedule-prop}
+In the implemented depth-$8$ BB extraction schedule, for each sector-relevant $B$ round, every single-pair geometry event $\hat P_e\otimes\hat P_{e'}$ propagates through the remaining Clifford gates and ancilla elimination to a weight-$2$ data Pauli. Consequently, the retained pair coefficients $b_{ij}^{\sigma}$ receive first-order contributions only from single-pair events, and the discarded weight-$\ge 3$ Pauli mass satisfies
+\begin{equation}
+M_{\ge 3}^{\sigma}(\phi) = O(\Theta_t^4) \qquad (\Theta_t\to 0),
+\label{eq:schedule-remainder}
+\end{equation}
+where $\Theta_t^2:=\sum_{a\in A_t}\theta_a^2$. For any finite coupling window $\Theta_t\le\Theta_\ast$, the bound holds with an explicit constant $C_\sigma(\Theta_\ast)$ absorbing the factor $\tfrac{1}{2}e^{\Theta_\ast^2}$ and the schedule-dependent propagation count.
+\end{theorem}
+
+\begin{proof}
+Under Corollary~\ref{cor:twirl}, a single-pair event in a $B$ round applies the sector-relevant Pauli $\hat P_e\otimes\hat P_{e'}$ to the two data qubits of the interacting gate blocks. In the $X$ sector, $\hat P_e$ acts as $X$ on a $q(L)$ data qubit (the control of the $q(L)\to q(Z)$ CNOT). Clifford conjugation by subsequent CNOTs in the depth-$8$ schedule maps $X$ on a CNOT control to $X$ on both control and target; the target is an ancilla qubit ($q(Z)$) that is measured and eliminated. The data-level weight therefore remains $2$; the $Z$-sector argument is analogous with the roles of $q(L)$ and $q(R)$ exchanged.
+
+Since every single-pair event propagates to weight $\le 2$, weight-$\ge 3$ contributions require two or more pair events in the same tick. Set $x_a:=\sin^2\theta_a$ and let $Y_a\sim\mathrm{Bernoulli}(x_a)$ be independent. From the exact parity expansion (Eq.~\eqref{eq:tick-twirl}), $|\alpha_B|^2=\prod_{a\in B}x_a\prod_{a\notin B}(1-x_a)$, so
+\begin{equation}
+\sum_{|B|\ge 2}|\alpha_B|^2 = \Pr\!\left[\textstyle\sum_a Y_a\ge 2\right] \le \mathbb{E}\!\left[\tbinom{\sum_a Y_a}{2}\right] = \sum_{a<b}x_a x_b \le \tfrac{1}{2}\Theta_t^4,
+\end{equation}
+using $\sum_a x_a\le\sum_a\theta_a^2=\Theta_t^2$. Since the full-tick twirl (Eq.~\eqref{eq:tick-twirl}) groups subsets by monomial collision, the squared-amplitude sum over distinct monomials picks up a Cauchy--Schwarz collision multiplicity $m_t:=\max_{\hat Q}|\{B:\hat S_B=\hat Q,\,|B|\ge 2\}|$, bounded by a schedule constant. Absorbing $m_t$ into $C_\sigma$ gives Eq.~\eqref{eq:schedule-remainder}.
+\end{proof}
+
+\begin{corollary}[Linearized retained coefficients]
+\label{cor:linearized}
+Under the conditions of Theorem~\ref{thm:schedule-prop}, the retained pair coefficients satisfy
+\begin{equation}
+b_{ij}^{\sigma}(\phi) = \sum_{a\in A_t} M_{ij,a}^{\sigma}\,\sin^2\theta_a + O\!\left(\Theta_t^4\right),
+\end{equation}
+where $M_{ij,a}^{\sigma}\in\{0,1\}$ is the schedule-determined indicator that the single-pair event $a$ propagates to the data-pair $(i,j)$ in sector $\sigma$.
+\end{corollary}
+
+For the full depth-$8$ cycle with $R$ relevant rounds, the roundwise geometry increments compose as
+\begin{equation}
+\Delta\mathcal{E}_{\mathrm{cycle}}^{\sigma} = \sum_r \Delta\mathcal{E}_{r,\le 2}^{\sigma} + O\!\left(\sum_r \Theta_r^4 + \sum_{r<s}\Theta_r^2\Theta_s^2\right),
+\label{eq:cycle-compose}
+\end{equation}
+so the full-cycle retained model inherits the roundwise $O(\Theta^4)$ control. From this point onward, the geometry enters the finite-code analysis only through the retained coefficients $a_i^\sigma$ and $b_{ij}^\sigma$, and through the weighted support graph they induce.
+
+The baseline data channel at $\theta=0$ already contains higher-weight Pauli components from the stabilizer projection, handled by the decoder. The geometry-induced \emph{incremental} channel $\Delta\mathcal{E}(\theta):=\mathcal{E}^{\sigma}_{\phi}(\theta)-\mathcal{E}^{\sigma}_{\phi}(0)$ need not introduce new higher-weight mass: Appendix~\ref{app:microscopic} (Fig.~\ref{fig:weight-audit}) verifies on a toy one-round subcircuit that $\Delta M_{\ge 3}(\theta)<0$, so the geometry correction generates only weight-$1$ and weight-$2$ mass in that setting.
+
+\begin{figure*}[!htbp]
+\centering
+\includegraphics[width=0.94\textwidth]{figures/biplanar_theorem_vs_implementation.pdf}
+\caption{Theorem-level and implemented bounded-thickness embeddings. (a)~The schematic thickness-two cartoon: all qubit sites lie in the base plane $\Pi_0$ (shown as the toric register grid), while the relevant same-round route families $G_A$ and $G_B$ are assigned to distinct routing slabs $\Pi_+$ and $\Pi_-$; dotted lines indicate layer access and smooth curves show schematic non-crossing in-plane routes. No same-layer crossing is shown or required. (b)~The biplanar bounded-thickness realization used in the numerical study. Solid lines show representative in-plane traverses; dotted lines show the layer access paths connecting $\Pi_0$ to the routing slabs. The two blue traverses in $\Pi_+$ ($B_3$ and $A_2$, both in $G_A$) connect qubits at different toric-grid depths, so they project to different positions within the slab. The inter-layer separation $2h$ prevents same-round crossings across $G_A$ and $G_B$. This panel visualizes the realized bounded-thickness routing without claiming an exact reconstruction of the hardware geometry of Ref.~\onlinecite{bravyi_memory_2024}.}
+\label{fig:biplanar-vs-implementation}
+\end{figure*}
+
+\begin{figure*}[!htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{figures/support_to_graph_bridge.pdf}
+\caption{Worked BB72 bridge from routed crossings to the support graph. Panel~(a) shows the $B_3$-round crossing picture on the BB72 reference support $S_{\mathrm{ref}}$ in the four-column monomial embedding. Each same-round blue-red crossing pair induces an edge of the support graph. Panel~(b) shows the resulting support graph after collecting those $B_3$ contributions and then adding the $\Delta_B$ triangle generated by rounds $B_1$ and $B_2$ on the $B$ side. The highlighted matching has size $\nu_{\phi}^{X}(L_{\mathrm{ref}})=3$, giving the support-level bound $d_{\mathrm{eff},X}(\phi)\le 6-3=3$.}
+\label{fig:bridge}
+\end{figure*}
+
+We compare two embedding families throughout. The first is a deterministic four-column monomial layout in which the $q(X)$, $q(L)$, $q(R)$, and $q(Z)$ registers occupy parallel columns and same-round gates are routed as straight segments. The second is a \emph{biplanar bounded-thickness} layout that implements the layer partition $G_A=\{A_2,A_3,B_3\}$ and $G_B=\{A_1,B_1,B_2\}$ from Ref.~\onlinecite{bravyi_memory_2024} and routes the relevant same-round edges without crossings within each layer. Figure~\ref{fig:biplanar-vs-implementation} separates the slab picture used in the theorem from the routed realization used in the numerics. We import the layer split and the no-same-round-crossing property from Ref.~\onlinecite{bravyi_memory_2024} without reconstructing the full hardware geometry. In the implementation, each routed edge receives an infinitesimal lane offset $\varepsilon_i\propto h/n$ within its layer so that the 3D polylines are distinct; these offsets regularize the geometry engine and vanish in the large-code limit. The bounded-thickness separation comes from the inter-layer distance $2h$: under strictly positive kernels, same-layer pairs at separation $\varepsilon_i\to 0$ still contribute $\kappa(0)$. Replacing the infinitesimal offsets by any fixed realistic within-layer clearance changes only the per-pair kernel values, not the qualitative ordering between embeddings.
+
+The proximity kernels used here are the crossing kernel $\kappa_{\times}$ defined above, the regularized algebraic kernel
+\begin{equation}
+\kappa_{\alpha,r_0}(d)=\left(1+\frac{d}{r_0}\right)^{-\alpha},
+\label{eq:powerlaw}
+\end{equation}
+with decay exponent $\alpha>0$ and regularization length $r_0>0$, and the exponential kernel $\kappa_{\xi}(d)=e^{-d/\xi}$ with decay length $\xi>0$. The crossing kernel isolates the combinatorial crossing mechanism. Under strictly positive kernels, every finite same-round separation contributes a nonzero pair weight, so weighted exposure replaces crossing count as the discriminating quantity. Figure~\ref{fig:bridge} shows the BB72 crossing-to-graph map for the worked support; Appendix~\ref{app:geometry} gives the toric-base placement.
+
+The remaining model-dependent step beyond the controlled truncation is the treatment of retained pair indicators as independent Bernoulli variables when building $\Ew_\phi^\sigma(L)$, $J_\kappa$, and $C_D$.
+
+\subsection{Circuit-level noise placement}
+\label{sec:syndrome}
+
+Standard CNOT propagation identities imply that, in the decoded $X$ sector, same-tick geometry-induced pair events are projected back onto data through the $q(L)\to q(Z)$ CNOT layers. In the implemented depth-$8$ BB cycle~\cite{bravyi_memory_2024} these are rounds $R3$, $R4$, and $R5$, carrying the matrices $B_1$, $B_2$, and $B_3$. The $Z$ sector is analogous, with sector-relevant routed blocks $q(X)\to q(R)$ in the same three $B$ rounds. Table~\ref{tab:propagation} summarizes the round-by-round propagation used in the proof of Theorem~\ref{thm:schedule-prop}.
+
+\begin{table}[!htbp]
+\caption{Single-pair geometry-event propagation in the BB schedule.}\label{tab:propagation}
+\footnotesize
+\renewcommand{\arraystretch}{1.2}%
+\begin{ruledtabular}
+\begin{tabular}{llll}
+Sector & Round & Block Pauli $\hat P_e$ & Data image \\
+\colrule
+$X$ & $B_r$ ($r=1,2,3$) & $X_{q(L)}\otimes I_{q(Z)}$ & $X$ on two $q(L)$ sites \\
+$Z$ & $B_r$ ($r=1,2,3$) & $Z_{q(X)}\otimes Z_{q(R)}$ & $Z$ on two $q(R)$ sites \\
+\end{tabular}
+\end{ruledtabular}
+\end{table}
+
+The circuit-level noise model applies a two-qubit depolarizing channel (rate $p_{\mathrm{cnot}}$) after every active CNOT, a one-qubit depolarizing channel (rate $p_{\mathrm{idle}}$) on every idle qubit, single-Pauli preparation errors (rate $p_{\mathrm{prep}}$), and single-Pauli measurement errors (rate $p_{\mathrm{meas}}$). Geometry-induced pair channels are controlled separately by $(J_0,\tau,\kappa)$ and act on the sector-relevant data pairs. Section~\ref{sec:results} gives the simulation protocol.
+
+\section{Effective distance, weighted exposure, and the AKP-inspired compatibility}
+\label{sec:theory}
+
+For a fixed embedding $\phi$ and sector $\sigma$, the retained pair terms in Eq.~\eqref{eq:retained-channel} define a weighted correlation graph
+\begin{equation}
+C_{\phi}^{\sigma}=(V,E,w),
+\end{equation}
+whose vertices are data qubits in the chosen sector, whose edges are retained pair locations with nonzero coefficient, and whose edge weights $w_{ij}:=b_{ij}^{\sigma}$ are the retained pair probabilities from Eq.~\eqref{eq:retained-channel}. A \emph{logical operator} is a Pauli operator that commutes with every stabilizer but is not itself a stabilizer; its \emph{support} $S=\supp(L)$ is the set of qubits on which it acts nontrivially. Given a sector logical operator $L$, write $C_{\phi}^{\sigma}[S]$ for the subgraph of $C_{\phi}^{\sigma}$ induced on $S$. A \emph{matching} in a graph is a set of edges sharing no common vertex.
+
+\begin{definition}[Matching number and weighted exposure]
+For a logical support $S$, the \emph{matching number}
+\begin{equation}
+\nu_{\phi}^{\sigma}(L)=\nu\Bigl(C_{\phi}^{\sigma}[S]\Bigr)
+\end{equation}
+is the size of a maximum matching in the support-induced subgraph, and the \emph{weighted exposure}
+\begin{equation}
+\Ew_{\phi}^{\sigma}(L)=\sum_{\{i,j\}\,\subseteq\, S} w_{ij}
+\label{eq:exposure-def}
+\end{equation}
+is the total retained pair weight on the support.
+\end{definition}
+
+We now relate the matching number to the effective fault weight by treating each retained single- or pair-data location as a single elementary event.
+
+\begin{definition}[Support-level effective fault weight]
+Let $L$ be a sector logical operator with support $S$. The support-level effective fault weight $w^{\sigma}_{\mathrm{eff},\phi}(L)$ is the minimum number of retained elementary fault locations whose product acts as $L$ on $S$, counting one for each retained single location and one for each retained pair location.
+\end{definition}
+
+\subsection{Adversarial effective-distance reduction}
+
+Let $d_{\sigma}$ be the code distance in sector $\sigma$---the minimum weight of a nontrivial sector-$\sigma$ logical operator---and define the sector effective distance by $d^{\sigma}_{\mathrm{eff}}(\phi):=\min_L w^{\sigma}_{\mathrm{eff},\phi}(L)$, where the minimum is over all sector logical operators.
+
+\begin{theorem}[Exact support-level effective fault weight]
+\label{thm:deff}
+Let $L$ be a sector logical operator with support $S$, and let $\nu_{\phi}^{\sigma}(L)$ be the matching number of $C_{\phi}^{\sigma}[S]$. Assume that every vertex of $S$ admits a retained single-location sector fault of the correct Pauli type. Then
+\begin{equation}
+w^{\sigma}_{\mathrm{eff},\phi}(L)= |S|-\nu_{\phi}^{\sigma}(L).
+\label{eq:weff-bound}
+\end{equation}
+Consequently,
+\begin{equation}
+d^{\sigma}_{\mathrm{eff}}(\phi)\le d_{\sigma}-\max_{L\,\in\,\mathcal L_{\sigma,d_{\sigma}}}\nu_{\phi}^{\sigma}(L),
+\label{eq:deff-bound}
+\end{equation}
+where $\mathcal L_{\sigma,d_{\sigma}}$ denotes the set of sector minimum-weight logicals. (Equality holds if the minimizer of $w_{\mathrm{eff}}$ is attained among minimum-weight logicals; the bound is tight in all BB72 instances studied here.)
+\end{theorem}
+
+\begin{proof}[Proof of Theorem~\ref{thm:deff}]
+\emph{Upper bound.} Let $M$ be a maximum matching in $C_{\phi}^{\sigma}[S]$, so $|M|=\nu_{\phi}^{\sigma}(L)$. Use one retained pair fault for each edge in $M$ and one single-qubit fault for each unmatched vertex. The total is $|M|+(|S|-2|M|)=|S|-\nu$.
+
+\emph{Lower bound.} Let $F$ be any set of retained pair edges used to realize $L$ on $S$. Every support vertex must be covered an odd number of times by the union of pair and single faults. Vertices of odd degree in $(S,F)$ require no additional single fault; all others require one. The minimum number of singles is therefore $|S|-o(F)$, where $o(F)$ is the number of odd-degree vertices in the subgraph $(S,F)$, and the total cost is $|F|+|S|-o(F)$. Decompose $(S,F)$ into nontrivial connected components $C_1,\ldots,C_t$ with $v_r$ vertices and $e_r$ edges each. In each component $o_r\le v_r$ and $e_r\ge v_r-1$ (connectivity), so $o_r-e_r\le 1$. Summing gives $o(F)-|F|\le t$. Selecting one edge from each component yields a matching of size $t$, hence $t\le\nu$. Therefore $|F|+|S|-o(F)=|S|-(o(F)-|F|)\ge|S|-\nu$.
+
+Combining the two bounds gives $w^{\sigma}_{\mathrm{eff},\phi}(L)=|S|-\nu$. Restricting to minimum-weight logicals and taking the minimum yields Eq.~\eqref{eq:deff-bound}.
+
+\end{proof}
+
+\begin{remark}
+The single-location assumption holds in the implemented BB circuit model, where each data qubit undergoes single-qubit depolarizing errors with rate $p$ per tick.
+\end{remark}
+
+In words: each matched support pair removes one elementary fault location from the adversarial count, so more crossings on the support mean a lower effective distance.
+
+\begin{corollary}
+\label{cor:complete-weff}
+If $C_{\phi}^{\sigma}[S]$ is the complete graph on $S$, then $w^{\sigma}_{\mathrm{eff},\phi}(L)=\lceil|S|/2\rceil$.
+\end{corollary}
+
+Under the crossing kernel, Theorem~\ref{thm:deff} becomes a combinatorial statement: projecting the same-round crossings on the support directly lowers the effective-distance bound.
+
+\subsection{Support saturation and weighted exposure for positive kernels}
+
+\begin{proposition}[Support saturation for strictly positive kernels]
+\label{prop:saturation-main}
+Fix a sector logical operator $L$ with support $S$. Suppose that for every unordered pair $\{i,j\}\subseteq S$ there exists at least one retained round in which the corresponding routed gate blocks are simultaneously active, disjoint, and separated by a finite distance, and that the retained pair coefficient is strictly positive for every such finite same-round separation. Then the support-induced graph $C_{\phi}^{\sigma}[S]$ is complete. Consequently, once $|S|$ is fixed, the matching number depends only on support size and no longer distinguishes embeddings.
+\end{proposition}
+
+\begin{proof}[Proof of Proposition~\ref{prop:saturation-main}]
+By assumption, for every unordered pair $\{i,j\}\subseteq S$, there is at least one retained same-round gate-block pair whose propagated coefficient contributes a strictly positive pair weight to the retained sector model. Hence, the aggregated retained coefficient $w_{ij}$ is strictly positive for every unordered support pair, so every unordered pair of vertices is an edge of $C_{\phi}^{\sigma}[S]$. Therefore $C_{\phi}^{\sigma}[S]$ is the complete graph on $S$, and its matching number depends only on $|S|$.
+\end{proof}
+
+Proposition~\ref{prop:saturation-main} and Corollary~\ref{cor:complete-weff} imply that once the support graph saturates, every embedding has effective fault weight $\lceil|S|/2\rceil$ on that support. Finite-coupling discrimination then depends on weighted exposure rather than adversarial distance.
+
+\begin{proposition}[Exposure as the first-order pair-risk parameter]
+\label{prop:union}
+Let $L$ be a logical operator with support $S$. Under the retained single-and-pair model, let $Y_{ij}\sim\mathrm{Bernoulli}(w_{ij})$ be independent pair-event indicators for each $\{i,j\}\subseteq S$, and define $\Ew:=\Ew_{\phi}^{\sigma}(L)=\sum_{\{i,j\}\subseteq S}w_{ij}$. Then
+\begin{equation}
+\Pr\!\left[\textstyle\sum_{\{i,j\}\subseteq S} Y_{ij}\ge 1\right]=1-\prod_{\{i,j\}\,\subseteq\, S}\left(1-w_{ij}\right),
+\label{eq:exact-pair-risk}
+\end{equation}
+and this probability satisfies the two-sided bound
+\begin{equation}
+1-e^{-\Ew}\le\Pr\!\left[\textstyle\sum Y_{ij}\ge 1\right]\le\min\{1,\,\Ew\}.
+\label{eq:two-sided}
+\end{equation}
+In the weak-pair regime ($\Ew\ll 1$), the probability is $\Ew+O(\Ew^2)$.
+\end{proposition}
+
+\begin{proof}
+Equation~\eqref{eq:exact-pair-risk} is the complement of the all-clear probability under independence. The upper bound is the union bound; the lower bound follows from $1-w_{ij}\le e^{-w_{ij}}$ and multiplication. The first-order expansion follows from $1-\prod(1-w_{ij})=\sum w_{ij}+O((\sum w_{ij})^2)$.
+\end{proof}
+
+Weighted exposure is therefore the first finite-coupling quantity that separates embeddings under positive kernels: lower total pair weight on a logical support means lower pair-event risk on that support.
+
+\begin{corollary}[Certified improvement under the logical-aware objective]
+\label{cor:certified-Jkappa}
+For a reference family $\RX$ of logical supports, define $J_{\kappa}(\phi;\,\RX):=\max_{L\in\RX}\Ew_{\phi}^{\sigma}(L)$ and the worst-support pair-event probability
+\begin{equation}
+B_{\kappa}(\phi;\,\RX)
+:=
+\max_{L\in\RX}\,
+\Pr\!\left[\textstyle\sum_{\{i,j\}\subseteq\supp(L)} Y_{ij}\ge 1\right].
+\end{equation}
+Then
+\begin{equation}
+B_{\kappa}(\phi;\,\RX)\le J_{\kappa}(\phi;\,\RX).
+\end{equation}
+In particular, if $J_{\kappa}(\phi'; \RX)<J_{\kappa}(\phi; \RX)$, then the upper bound on the worst-support pair-event burden is strictly smaller for $\phi'$ than for $\phi$.
+\end{corollary}
+
+\begin{proof}
+Apply Proposition~\ref{prop:union} supportwise and take the maximum over $L\in\RX$.
+\end{proof}
+
+\subsection{Worked BB72 support and crossing-local reduction}
+
+BB72 is the smallest published BB memory benchmark in Ref.~\onlinecite{bravyi_memory_2024}. We use the pure-$q(L)$ support
+\begin{equation}
+S_{\mathrm{ref}}=\{3,12,21,24,27,33\}
+\label{eq:ref-support}
+\end{equation}
+as a concrete minimum-weight $X$-sector logical support for explicit geometry calculations. In the monomial embedding, Eq.~\eqref{eq:cross-criterion} yields \bbSeventyTwoCrossSupportCrossings{} support-level crossing edges across the three relevant $B$ rounds and maximum matching number $\nu=\bbSeventyTwoCrossMatching$. Hence Theorem~\ref{thm:deff} gives
+\begin{equation}
+w_{\mathrm{eff}}(L_{\mathrm{ref}})\le 6-3=3.
+\end{equation}
+In the biplanar bounded-thickness implementation, the crossing kernel yields an empty support graph; hence, the theorem leaves the support-level bound unchanged.
+
+\subsection{Weighted exposure under positive kernels}
+
+For the worked BB72 support, the algebraic audit gives
+\begin{equation}
+\Ew^X_{\phi_{\mathrm{mono}}}(L_{\mathrm{ref}})=\bbSeventyTwoMonoExposure{},
+\qquad
+\Ew^X_{\phi_{\mathrm{bi}}}(L_{\mathrm{ref}})=\bbSeventyTwoBiExposure{}
+\end{equation}
+for the regularized algebraic kernel with $\alpha=3$, $r_0=1$, and $J_0\tau=0.04$. The matching numbers agree, but the monomial exposure is larger, so the weighted exposure distinguishes the embeddings where the matching numbers do not.
+
+The bounded-thickness embedding also admits a simple analytic upper bound. Let $\delta_A$ and $\delta_B$ denote the minimum same-round support-pair separations in the layers carrying $B_3$ and $B_{1,2}$, respectively. For the worked BB72 support,
+\begin{equation}
+\Ew^X_{\phi_{\mathrm{bi}}}(L_{\mathrm{ref}})
+\le 15\left(2q_{\kappa}(\delta_B)+q_{\kappa}(\delta_A)\right),
+\label{eq:bi-surrogate-proof}
+\end{equation}
+where $q_{\kappa}(d)$ is the retained pair coefficient at separation $d$. This is a deliberate roundwise overcount: each of the $\binom{6}{2}=15$ support pairs is charged the worst-case layer separation in every round, even though a given pair contributes in at most one of the three relevant $B$ rounds (two in layer $G_B$ and one in $G_A$). The bound is therefore loose but analytically tractable.
+
+\subsection{Two-dimensional summability and the AKP-inspired compatibility}
+
+The following subsection is asymptotic and concerns the amplitude-level microscopic Hamiltonian before twirling; it is not a threshold statement for the finite-code simulations of Sec.~\ref{sec:results}.
+
+Weighted exposure connects to asymptotic long-range-noise theory. For a two-dimensional layout with minimum data-location separation $a>0$ and regularized algebraic kernel $\kappa_{\alpha,r_0}$, aggregate coupling is summable exactly when $\alpha>2$.
+
+\begin{lemma}[Two-dimensional summability for regularized power laws]
+\label{lem:summability}
+Assume a planar layout with minimum pairwise separation $a>0$. Then for any data location $i$ and any $\alpha>2$,
+\begin{equation}
+\sum_{j\neq i}\left(1+\frac{d_{ij}}{r_0}\right)^{-\alpha}
+\le 24\,\zeta\left(\alpha-1\right)\left(\frac{r_0}{a}\right)^{\alpha}.
+\label{eq:summability}
+\end{equation}
+\end{lemma}
+
+\begin{proof}[Proof of Lemma~\ref{lem:summability}]
+Center annuli of width $a$ around a fixed data location $i$ and let $\mathcal{A}_n$ denote the annulus with inner radius $na$ and outer radius $(n+1)a$. Because the minimum pairwise separation is $a$, non-overlapping disks of radius $a/2$ can be placed at each data location. Every such disk centered at a point in $\mathcal{A}_n$ is contained in the fattened annulus from $(n-\tfrac{1}{2})a$ to $(n+\tfrac{3}{2})a$, whose area is $\pi(4n+2)a^2$. Dividing by the disk area $\pi a^2/4$ gives at most $4(4n+2)=16n+8$ points in $\mathcal{A}_n$, and $16n+8\le 24n$ for all $n\ge 1$. Hence
+\begin{align}
+\sum_{j\neq i}\!\left(1+\frac{d_{ij}}{r_0}\right)^{\!-\alpha}
+&\le \sum_{n=1}^{\infty}24n\!\left(1+\frac{na}{r_0}\right)^{\!-\alpha}\nonumber\\
+&\le 24\!\left(\frac{r_0}{a}\right)^{\!\alpha}
+\sum_{n=1}^{\infty} n^{1-\alpha}.
+\end{align}
+The final series is the Riemann zeta function
+\begin{equation}
+\zeta\left(\alpha-1\right)=\sum_{n=1}^{\infty}n^{-(\alpha-1)},
+\end{equation}
+which converges if and only if $\alpha>2$.
+\end{proof}
+
+The exponent $2$ is the planar threshold for summability of algebraic couplings. A tighter packing argument replaces the prefactor $24$ with $8$; the convergence itself uses only the $O(n)$ shell count.
+
+Equation~\eqref{eq:summability} therefore bounds the aggregate microscopic pair coupling seen by any location. Define
+\begin{equation}
+\eta_{\max}(\phi):=\sup_t\max_{e\,\in\, E_t}\eta_e^{(t)}(\phi)
+\end{equation}
+as the supremum, over ticks and active gate blocks, of the aggregated same-tick exposure from Eq.~\eqref{eq:eta-main}. Lemma~\ref{lem:summability} then gives
+\begin{equation}
+\eta_{\max}(\phi)\le 24\,\zeta\!\left(\alpha-1\right)\!\left(\frac{r_0}{a}\right)^{\!\alpha}
+\label{eq:eta-max}
+\end{equation}
+for the regularized algebraic kernel.
+
+Aharonov, Kitaev, and Preskill showed that pairwise long-range Hamiltonian noise is compatible with scalable fault tolerance when the aggregate coupling per location is uniformly small~\cite{akp_2006}. In our notation, their criterion reads as follows.
+
+\begin{theorem}[AKP pairwise long-range criterion, restated from Ref.~\onlinecite{akp_2006}]
+There exists $\eta_0>0$ such that fault-tolerant simulation is possible if the microscopic Hamiltonian can be written as a sum of pair terms obeying
+\begin{equation}
+\sup_t\max_i\sum_{j\neq i}\lVert H_{ij}(t)\rVert\,\tau<\eta_0,
+\end{equation}
+where $\lVert\cdot\rVert$ denotes the operator norm.
+\end{theorem}
+
+Each pair term in Eq.~\eqref{eq:tick-ham-main} has operator norm $J_0\kappa(d_\phi(e,e'))$, so the aggregate coupling per gate block is bounded by $J_0\eta_e^{(t)}(\phi)$. A sufficient AKP-inspired condition at the gate-block level is therefore
+\begin{equation}
+J_0\tau\,\eta_{\max}(\phi)<\eta_0^{\mathrm{blk}},
+\end{equation}
+where $\eta_0^{\mathrm{blk}}$ is the AKP threshold constant renormalized to constant-size gate blocks. This is an amplitude-level statement about the coherent Hamiltonian $\Hxt$ before twirling, not about the retained Pauli channel. Regularized algebraic kernels with $\alpha>2$ are exactly the two-dimensional regime in which routed pair couplings remain summable. The finite biplanar realization used in the BB72/BB144 numerics is evaluated directly by the geometry engine and should not be read as the asymptotic object of this summability claim.
+
+\section{Logical-aware single-layer design program}
+\label{sec:logical-aware}
+
+The positive-kernel results of the previous section identify weighted exposure as the finite-coupling quantity that distinguishes embeddings. To turn that into a concrete design problem, we restrict to a logical family that can be enumerated on BB72 and optimized over the four-column single-layer architecture. The restriction to pure-$q(L)$ operators---those whose support lies entirely on the $q(L)$ register---gives a family large enough to be meaningful but small enough for exhaustive audit.
+
+We allow permutations $\sigma_L,\sigma_Z\in S_M$ of the $q(L)$ and $q(Z)$ row orders, where $S_M$ is the symmetric group on $M$ indices introduced in Sec.~\ref{sec:model}. A transposition $\tau_{ij}\in S_M$ swaps indices $i$ and $j$. For BB codes written in the standard CSS matrix form
+\begin{equation}
+H_X=\left[A\;B\right],\qquad H_Z=\left[B^\top\;A^\top\right],
+\end{equation}
+consider $X$-type operators whose $q(L)\oplus q(R)$ support is represented by a column vector $\begin{pmatrix}u\\v\end{pmatrix}\in\F^{2M}$, where $u\in\F^M$ acts on $q(L)$ and $v\in\F^M$ acts on $q(R)$. An operator with $v=0$ is called \emph{pure-$q(L)$}.
+
+\begin{proposition}[Exact pure-$q(L)$ quotient]
+\label{prop:pureL-main}
+A pure-$q(L)$ operator is a valid $X$-sector logical operator if and only if $u\in\kerop(B^\top)$, and its trivial pure-$q(L)$ representatives are exactly the subgroup
+\begin{equation}
+\TL=\{A^\top\lambda:\,B^\top\lambda=0\}.
+\end{equation}
+Hence pure-$q(L)$ $X$ logical classes are parameterized by the quotient
+\begin{equation}
+\kerop(B^\top)/\TL.
+\label{eq:pureL-quotient-main}
+\end{equation}
+\end{proposition}
+
+\begin{proof}[Proof of Proposition~\ref{prop:pureL-main}]
+The operator commutes with every $Z$ stabilizer if and only if
+\begin{equation}
+H_Z\begin{pmatrix}u\\0\end{pmatrix}=B^\top u=0,
+\end{equation}
+so $u\in\kerop(B^\top)$. It is trivial as a logical operator if and only if $\begin{pmatrix}u\\0\end{pmatrix}$ lies in the column space of $H_X^\top$, that is, if and only if there exists $\lambda\in\F^M$ such that
+\begin{equation}
+\begin{pmatrix}u\\0\end{pmatrix}=H_X^\top\lambda=\begin{pmatrix}A^\top\lambda\\B^\top\lambda\end{pmatrix}.
+\end{equation}
+The pure-$q(L)$ requirement forces $B^\top\lambda=0$, so the trivial pure-$q(L)$ representatives are exactly $u=A^\top\lambda$ with $B^\top\lambda=0$. The quotient follows.
+\end{proof}
+
+The simplification ``mod colspace $A^\top$'' is valid only when every relevant $A^\top$ image already satisfies $B^\top\lambda=0$; in general, the full quotient $\kerop(B^\top)/\TL$ is required.
+
+\subsection{BB72 family}
+
+For BB72, the exhaustive audit used in this work gives
+\begin{equation}
+\dim \kerop B^\top=12,
+\qquad
+\dim \TL=6,
+\end{equation}
+so the pure-$q(L)$ class space has dimension $6$. Exhaustive enumeration then yields exactly \bbSeventyTwoPureLFamilyCount{} weight-$6$ pure-$q(L)$ supports, which form the reference family $\RX$ for the BB72 logical-aware objective. For BB108, the literature code parameters are \bb{108,8,10}, but the minimum weight among pure-$q(L)$ representatives is $12$; we keep those two quantities separate throughout.
+
+\subsection{Logical-aware objectives and finite termination}
+
+Given a reference family $\RX$ of minimum-weight pure-$q(L)$ $X$ logical supports, define the single-layer logical-aware objective by
+\begin{equation}
+J_{\kappa}(\phi;\,\RX)=\max_{L\,\in\,\RX}\Ew_{\phi}^{X}(L).
+\label{eq:Jkappa}
+\end{equation}
+For the crossing kernel, one may likewise define
+\begin{equation}
+J_{\times}(\phi;\,\RX)=\max_{L\,\in\,\RX}\nu_{\phi}^{X}(L),
+\end{equation}
+but in the positive-kernel regime relevant here, $J_{\kappa}$ carries more information. By Corollary~\ref{cor:certified-Jkappa}, lowering $J_{\kappa}$ lowers a strict upper bound on support-local pair-event incidence over the entire reference family.
+
+Let $\Phi_{\mathrm{4col}}$ denote the finite set of admissible four-column row-permutation embeddings. The exact logical-aware design target is then
+\begin{equation}
+\phi_{\mathrm{LA}}^{\star}\in \argmin_{\phi\,\in\,\Phi_{\mathrm{4col}}} J_{\kappa}(\phi;\,\RX).
+\label{eq:exact-la-opt}
+\end{equation}
+The production search does not solve Eq.~\eqref{eq:exact-la-opt} globally. It uses multirestart simulated annealing only to generate warm starts, and then applies deterministic first-improving two-swap descent on the exact objective until no improving transposition remains.
+
+\begin{proposition}[Finite termination of deterministic swap descent]
+\label{thm:swap-descent}
+The deterministic logical-aware two-swap descent terminates after finitely many accepted moves and outputs a two-swap local minimum of $J_{\kappa}$ on $\Phi_{\mathrm{4col}}$.
+\end{proposition}
+
+\begin{proof}
+The state space $\Phi_{\mathrm{4col}}$ is finite because it is a finite product of permutation groups. Every accepted move strictly decreases the real-valued objective $J_{\kappa}$, so no state can be revisited. Hence, the descent terminates after finitely many accepted moves. The stopping rule is that no transposition of either $\sigma_L$ or $\sigma_Z$ lowers $J_{\kappa}$ further; therefore, the returned embedding is a two-swap local minimum.
+\end{proof}
+
+\begin{algorithm}[!htbp]
+\caption{Logical-aware embedding search}\label{alg:la-search}
+\KwIn{BB matrices $(A,B)$; reference family $\RX\subseteq 2^{[M]}$; kernel $\kappa$; restarts $n_r$}
+\KwOut{Two-swap local minimizer $(\sigma_L^\star,\sigma_Z^\star)\in S_M\times S_M$; value $J_\kappa(\sigma_L^\star,\sigma_Z^\star)$}
+\BlankLine
+$J_{\kappa}(\sigma_L,\sigma_Z)\gets\max_{L\in\RX}\Ew^{X}_{\phi(\sigma_L,\sigma_Z)}(L)$\;
+$\mathcal N_{2}(\sigma_L,\sigma_Z)\gets\{(\sigma_L\!\circ\!\tau_{ij},\sigma_Z)\}_{i<j}\cup\{(\sigma_L,\sigma_Z\!\circ\!\tau_{ij})\}_{i<j}$\;
+\BlankLine
+\For{$r=1,\ldots,n_r$}{
+$(\sigma_L^{(r)},\sigma_Z^{(r)})\gets$ uniform random element of $S_M\times S_M$;
+Run simulated annealing on $\mathcal N_2$ from $(\sigma_L^{(r)},\sigma_Z^{(r)})$;
+}
+$(\sigma_L^\star,\sigma_Z^\star)\gets\argmin_{1\le r\le n_r} J_\kappa(\sigma_L^{(r)},\sigma_Z^{(r)})$\;
+\BlankLine
+\Repeat{$J_\kappa(s^\star)\ge J_\kappa(\sigma_L^\star,\sigma_Z^\star)$}{
+$s^\star\gets\argmin_{s\in\mathcal N_2(\sigma_L^\star,\sigma_Z^\star)}J_\kappa(s)$;
+\If{$J_\kappa(s^\star)<J_\kappa(\sigma_L^\star,\sigma_Z^\star)$}{
+$(\sigma_L^\star,\sigma_Z^\star)\gets s^\star$;
+}
+}
+\end{algorithm}
+
+Algorithm~\ref{alg:la-search} is the search procedure used in the numerical study. Simulated annealing supplies the warm start, and Proposition~\ref{thm:swap-descent} applies to the deterministic descent stage. In the implementation, every objective evaluation uses routed-segment distances from the geometry engine without approximation, and every crossing-local diagnostic computes the matching number with a general-graph maximum-matching routine rather than a bipartite shortcut. For the corrected BB72 true-family optimization, the deterministic audit yields
+\begin{align}
+\max_{L\in\RX}\Ew_{\phi_{\mathrm{mono}}}^{X}(L) & =\bbSeventyTwoLAMaxExposureMono{}, \\
+\max_{L\in\RX}\Ew_{\phi_{\mathrm{LA}}}^{X}(L)   & =\bbSeventyTwoLAMaxExposureLA{},   \\
+\max_{L\in\RX}\Ew_{\phi_{\mathrm{bi}}}^{X}(L)   & =\bbSeventyTwoLAMaxExposureBi{}.
+\end{align}
+The logical-aware single-layer embedding therefore reduces the monomial value by \bbSeventyTwoLAImprovementPct\%, while the biplanar reference reduces it by \bbSeventyTwoBiImprovementPct\%.
+
+By Corollary~\ref{cor:certified-Jkappa}, a lower $J_{\kappa}$ gives a tighter upper bound on support-local pair-event incidence over the chosen logical family. The numerical tests below track the same ordering in logical error rate.
+
+Appendix~\ref{app:decoder} develops a decoder-aware first-order refinement $C_D(\phi)$ that sharpens $J_\kappa$ by incorporating decoder sensitivity to individual pair locations. A pilot estimate at one operating point confirms the same embedding ordering with a sharper monomial-to-biplanar ratio ($3.2\times$ for $C_D$ versus $1.8\times$ for $J_\kappa$); the optimization target throughout this paper remains $J_\kappa$ because it is intrinsic to the retained model.
+
+\section{Computational validation}
+\label{sec:results}
+
+This section uses two geometry metrics. The crossing-kernel, distance-decay, and exposure--performance correlation tests use the reference-support exposure $\Ew_\phi^X(L_{\mathrm{ref}})$, evaluated on the fixed worked support of Sec.~\ref{sec:theory}. The logical-aware and many-layout tests use the family-wise objective $J_\kappa(\phi;\RX)=\max_{L\in\RX}\Ew_\phi^X(L)$. The first compares embeddings on a single support; the second evaluates worst-case behavior over the optimized logical family.
+
+\subsection{Simulation protocol}
+
+Every production sample runs the full depth-$8$ BB circuit of Sec.~\ref{sec:syndrome} and samples the leading-order retained-pair emulator implied by Theorem~\ref{thm:schedule-prop} and Corollary~\ref{cor:linearized}. For each simultaneously active pair of sector-relevant gate blocks at separation $d$, a correlated Pauli fault is injected on both data qubits with probability $q_\kappa^{\mathrm{lead}}(d):=\sin^2(\tau J_0\kappa(d))$, which equals the exact single-pair retained coefficient up to $O(\Theta_t^4)$ corrections. Circuit sampling uses Stim~\cite{gidney_stim_2021}; repeated raw runs at identical operating points are merged before plotting. In all sweeps the local rates are tied,
+\begin{equation}
+p_{\mathrm{cnot}}=p_{\mathrm{idle}}=p_{\mathrm{prep}}=p_{\mathrm{meas}}=:p,
+\end{equation}
+so $p$ denotes a common circuit-level error rate. Embeddings are compared at fixed $p$. All confidence intervals are 95\% Clopper--Pearson (exact binomial). The geometry channels are controlled by $(J_0,\tau,\kappa)$ and, unless stated otherwise, inserted only on the sector-relevant $B$ rounds; this is a mechanism-isolating simplification, not a claim that physical crosstalk is sector-selective. Appendix~\ref{app:numerics} includes an untied-rate robustness check confirming that the hierarchy is not specific to this insertion rule.
+
+The baseline decoder is BP+OSD as in Ref.~\onlinecite{roffe_bp_osd_2020}. The source archive also contains a correlation-aware BP+OSD prototype, but that prototype targets the retained single-and-pair model rather than the full multi-round circuit-level channel, so it is not a like-for-like circuit-level comparison. Appendix~\ref{app:decoder} records the retained-model decoder constructions.
+
+Every figure in this section uses the full circuit-level protocol of Sec.~\ref{sec:syndrome}. After merging repeated runs at identical control parameters, the dataset contains $\nSemanticTotal{}$ operating points: $\nBBSeventyTwoPoints{}$ on BB72, $\nBBOneFortyFourPoints{}$ on BB144, and $\nBBNinetyPoints{}$ and $\nBBOneOhEightPoints{}$ on BB90 and BB108. The main text reports the decoded $X$ sector analyzed in Sec.~\ref{sec:theory}. The number of syndrome cycles is fixed to the benchmark distance of the simulated code, namely $6$ for BB72 and $12$ for BB144. When an operating point has zero observed logical failures, the line-sweep plots place an open marker at the 95\% upper bound instead of at zero on the logarithmic axis.
+
+\subsection{Crossing-kernel validation on BB72}
+\label{subsec:crossing}
+
+\emph{Does crossing-induced support matching (Theorem~\ref{thm:deff}) lower effective distance in the full BB circuit?} The crossing kernel isolates the combinatorial mechanism. Figure~\ref{fig:bridge} shows the BB72 crossing picture and the associated support graph. For the worked BB72 weight-$6$ support from Sec.~\ref{sec:theory}, the monomial embedding has \bbSeventyTwoCrossSupportCrossings{} crossing support pairs and matching number $\nu=\bbSeventyTwoCrossMatching{}$. The theorem therefore yields
+\begin{equation}
+d_{\mathrm{eff}}\le \bbSeventyTwoDistance{}-\bbSeventyTwoCrossMatching{}=\bbSeventyTwoCrossDeffMono{}.
+\end{equation}
+In the biplanar embedding, the same diagnostic has no same-round projected crossings on that support, so the bound remains $d_{\mathrm{eff}}\le \bbSeventyTwoCrossDeffBi{}$.
+
+Figure~\ref{fig:bb72-crossing} follows this prediction closely. At $J_0\tau=0.04$ and $p=10^{-3}$, the monomial embedding has logical error rate \bbSeventyTwoCrossMonoLER{} with 95\% CI [\bbSeventyTwoCrossMonoLERLo{}, \bbSeventyTwoCrossMonoLERHi{}], while the biplanar embedding has zero failures in the present sample, corresponding to a 95\% upper confidence bound of \bbSeventyTwoCrossBiLERHi{}. Under this diagnostic kernel, the matching mechanism of Theorem~\ref{thm:deff} produces a logical penalty consistent with the halved effective distance.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/bb72_crossing_j0_sweep.pdf}
+\caption{BB72 crossing-kernel diagnostic sweep in the $X$ sector at physical depolarizing rate $p=10^{-3}$ and 6 cycles. The monomial embedding shows a rapid increase in logical error rate with coupling strength, whereas the biplanar bounded-thickness embedding remains at or near the sampling floor throughout the explored window. Error bars are 95\% confidence intervals; open markers denote zero-failure operating points, plotted at the 95\% upper bound. The crossing kernel is a validation model rather than a literal crosstalk law.}
+\label{fig:bb72-crossing}
+\end{figure}
+
+\subsection{BB72 distance-decay results}
+\label{subsec:bb72-power}
+
+\emph{Under distance-decay kernels (Proposition~\ref{prop:saturation-main}, Proposition~\ref{prop:union}), does the bounded-thickness embedding suppress the geometry penalty relative to the monomial layout?} The power-law kernel is the main distance-decay profile studied here because it preserves strictly positive geometry dependence and remains analytically summable for $\alpha>2$. Figure~\ref{fig:bb72-power} shows the two BB72 sweeps: coupling strength at fixed $\alpha=3$, and decay exponent at fixed $J_0\tau=0.04$.
+
+Across the sweep, the monomial embedding has the larger logical error rate. At the reference operating point $(J_0\tau,\alpha,p)=(0.04,3,10^{-3})$, the monomial embedding has logical error rate \bbSeventyTwoPowerMonoLER{} with 95\% CI [\bbSeventyTwoPowerMonoLERLo{}, \bbSeventyTwoPowerMonoLERHi{}], whereas the biplanar embedding has \bbSeventyTwoPowerBiLER{} with 95\% CI [\bbSeventyTwoPowerBiLERLo{}, \bbSeventyTwoPowerBiLERHi{}], a factor of \bbSeventyTwoPowerLERRatio{} at fixed code, schedule, decoder, and local noise.
+
+The analytical geometry metrics produce the same ordering. On the worked BB72 support, the weighted exposure under the regularized algebraic kernel is \bbSeventyTwoMonoExposure{} for the monomial embedding and \bbSeventyTwoBiExposure{} for the biplanar embedding. The maximum aggregated retained pair probability seen by a data location is likewise larger in the monomial embedding (\bbSeventyTwoPowerAggProbMono{}) than in the biplanar embedding (\bbSeventyTwoPowerAggProbBi{}).
+
+\begin{figure*}[!htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/bb72_powerlaw_main.pdf}
+\caption{Main BB72 distance-decay results in the $X$ sector. (a) Power-law coupling sweep at fixed $\alpha=3$ and $p=10^{-3}$. The logical-aware single-layer points are shown at the four couplings available in the present processed dataset, $J_0\tau\in\{0.02,0.03,0.04,0.06\}$. (b) Power-law exponent sweep at fixed $J_0\tau=0.04$ and $p=10^{-3}$. The monomial and biplanar bounded-thickness embeddings are shown on the full exponent grid, while the logical-aware embedding is shown on the available mini-slice $\alpha\in\{2,3,5\}$. Across the explored regime, the biplanar bounded-thickness embedding suppresses the geometry-induced logical penalty relative to the monomial single-layer embedding, and the logical-aware embedding lies strictly between them on the tested points. Error bars are 95\% confidence intervals.}
+\label{fig:bb72-power}
+\end{figure*}
+
+\subsection{Logical-aware embedding validation on BB72}
+\label{subsec:la}
+
+\emph{Does minimizing $J_\kappa$ (Corollary~\ref{cor:certified-Jkappa}) over the pure-$q(L)$ quotient lower logical error rate?} On the exact BB72 weight-$6$ pure-$q(L)$ family, the monomial embedding has maximum exposure \bbSeventyTwoLAMaxExposureMono{}, the logical-aware embedding has \bbSeventyTwoLAMaxExposureLA{}, and the biplanar embedding has \bbSeventyTwoLAMaxExposureBi{}. The logical-aware embedding therefore reduces the worst-case exposure by \bbSeventyTwoLAImprovementPct\% relative to the monomial baseline. The improvement is not concentrated on one support: across the full 36-support family, the mean exposure drops from $0.0212$ (monomial) to $0.0187$ (logical-aware) to $0.0120$ (biplanar), and the min-to-max range narrows from $[0.0096, 0.0303]$ to $[0.0113,0.0224]$ under the logical-aware layout. The raw crossing count can increase (542 vs.\ 522), confirming that exposure, not crossings, is the optimization target.
+
+The BB72 stochastic window in Fig.~\ref{fig:la-window} follows the equivalent analytical improvement. At $J_0\tau=0.04$, the logical-aware layout yields \bbSeventyTwoPowerLAFourLER{} with 95\% CI [\bbSeventyTwoPowerLAFourLERLo{}, \bbSeventyTwoPowerLAFourLERHi{}], compared with \bbSeventyTwoPowerMonoLER{} for the monomial layout and \bbSeventyTwoPowerBiLER{} for the biplanar layout. Across the four tested couplings $J_0\tau\in\{0.02,0.03,0.04,0.06\}$, the logical-aware layout lies strictly between the monomial and bounded-thickness curves, with total logical-error-rate reductions relative to monomial of approximately $43\%$, $35\%$, $28\%$, and $14\%$, respectively. The gain is largest in the moderate-correlation window and weakens as the monomial curve approaches saturation.
+
+Panel~(b) of Fig.~\ref{fig:bb72-power} shows the same pattern across the tested exponent range $\alpha\in\{2,3,5\}$ at fixed $(J_0\tau,p)=(0.04,10^{-3})$: the logical-aware single-layer design remains strictly between the monomial and bounded-thickness embeddings at every tested $\alpha$. The finite-coupling gain is smaller than the bounded-thickness gain, in line with the deterministic exposure ordering.
+
+\begin{figure*}[!htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/bb72_logical_aware_window.pdf}
+\caption{BB72 logical-aware design validation in the $X$ sector for the power-law kernel at $\alpha=3$ and $p=10^{-3}$. Panel (a) shows the stochastic coupling window $J_0\tau\in\{0.02,0.03,0.04,0.06\}$, where the logical-aware single-layer embedding lies between the monomial and biplanar bounded-thickness layouts at all tested couplings. Panel (b) shows the deterministic max-exposure audit over the weight-$6$ pure-$q(L)$ family. The analytical claim is the reduction in maximum weighted exposure; the LER window is the corresponding computational validation.}
+\label{fig:la-window}
+\end{figure*}
+
+\subsection{Exposure--performance correlation on BB72}
+\label{subsec:scatter}
+
+\emph{Does weighted exposure predict logical error rate across kernels, couplings, and embeddings?} A \emph{baseline operating point} is a tuple $(p,\kappa,J_0\tau,\phi)$ at which the monomial and biplanar embeddings are both sampled; points involving the logical-aware embedding are excluded from the baseline set. Figure~\ref{fig:scatter} plots the BB72 reference-support exposure $\Ew_\phi^X(L_{\mathrm{ref}})$ against the observed logical error rate for \baselineCorrelationN{} such points spanning the crossing, power-law, and exponential kernels. The baseline data give Spearman rank correlation $\rho_\mathrm{S}=\baselineSpearmanRho$ ($p$-value $=\baselineSpearmanP$).
+
+The scatter shows several roughly parallel branches rather than a single curve, because $p_L$ also depends on the local depolarizing floor $p$ and the kernel family $\kappa$. Within each kernel family, the correlation is tighter: $\rho_\mathrm{S}=1.000$ (crossing, $n=15$), $0.923$ (exponential, $n=12$), and $0.893$ (power-law, $n=90$), all with $p$-value${}<10^{-4}$. Restricting to fixed $p=10^{-3}$ gives $\rho_\mathrm{S}=0.965$ ($n=59$). At matched operating points---where two embeddings share the same $(p,\kappa,J_0\tau)$ and differ only in layout---64 of 65 non-tied pairs are concordant. Appendix~\ref{app:numerics} (Fig.~\ref{fig:bb72-by-kernel}) splits the scatter by kernel class. The logical-aware points, shown as stars and excluded from the quoted $\rho$, lie on the same trend.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/bb72_exposure_vs_ler.pdf}
+\caption{BB72 reference-support exposure versus observed logical error rate. Colors indicate embedding family, and marker shape indicates kernel family. The quoted Spearman coefficient uses the \baselineCorrelationN{} baseline points with at least ten failures and excludes the logical-aware points. Vertical bars are 95\% confidence intervals.}
+\label{fig:scatter}
+\end{figure}
+
+\subsection{Many-layout validation on BB72}
+\label{subsec:many-layout}
+
+\emph{Does the exposure metric generalize beyond two hand-picked embeddings?} To test weighted exposure across layouts rather than only across embeddings and kernels, we simulated $22$ distinct single-layer BB72 layouts at the fixed operating point $(p,\alpha,J_0\tau)=(10^{-3},3,0.04)$: the monomial layout, the logical-aware layout, and $20$ random row-permutation layouts. Each layout used $10,000$ shots under identical code, schedule, decoder, and local noise.
+
+Figure~\ref{fig:many-layout} plots the maximum family exposure $J_\kappa$ against the observed logical error rate for all $22$ layouts. The logical-aware layout ($J_\kappa=0.0224$, $p_L=0.212$) and the monomial layout ($J_\kappa=0.0303$, $p_L=0.284$) have the two lowest exposures and the two lowest logical error rates. All $20$ random layouts have higher exposures ($J_\kappa\in[0.043,0.054]$) and higher logical error rates ($p_L\in[0.44,0.62]$). The Spearman correlation across all $22$ layouts is $\rho_\mathrm{S}=0.552$ (Spearman $p$-value $=7.8\times10^{-3}$); the moderate value reflects scatter within the random ensemble, which occupies a narrow exposure band. Weighted exposure is therefore a useful optimization target for separating good layouts from bad ones, but it is not a complete predictor of logical error rate at fixed operating conditions. The separation between optimized and random layouts is complete: every optimized layout has lower exposure and lower logical error rate than every random layout.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/bb72_many_layout.pdf}
+\caption{Many-layout BB72 validation at fixed $(p,\alpha,J_0\tau)=(10^{-3},3,0.04)$. Each point is one of $22$ single-layer four-column layouts ($10,000$ shots, BP+OSD decoder). The monomial and logical-aware layouts (colored markers) have the lowest exposure and the lowest logical error rates; all $20$ random row-permutation layouts (gray squares) cluster at higher exposure and higher $p_L$. Error bars are 95\% Clopper--Pearson intervals.}
+\label{fig:many-layout}
+\end{figure}
+
+\subsection{Reduced scaling check on BB144}
+\label{subsec:bb144}
+
+\emph{Does the embedding hierarchy persist at the next benchmark size?} Figure~\ref{fig:bb144} shows the corresponding $J_0\tau$ and physical-error-rate sweeps in the $X$ sector.
+
+The geometry penalty matches the BB72 ordering and is larger at the reference operating point. At $(J_0\tau,\alpha,p)=(0.04,3,10^{-3})$, the monomial embedding has logical error rate \bbOneFortyFourPowerMonoLER{} with 95\% CI [\bbOneFortyFourPowerMonoLERLo{}, \bbOneFortyFourPowerMonoLERHi{}], whereas the biplanar embedding has \bbOneFortyFourPowerBiLER{} with 95\% CI [\bbOneFortyFourPowerBiLERLo{}, \bbOneFortyFourPowerBiLERHi{}], a factor of \bbOneFortyFourPowerLERRatio{}. The BB144 dataset is intentionally lighter than the BB72 dataset, so we use it only as a reduced-scale check and do not make a stronger asymptotic claim.
+
+\begin{figure*}[!htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/bb144_scaling_main.pdf}
+\caption{Reduced BB144 scaling check in the $X$ sector. (a) Power-law coupling sweep at fixed $\alpha=3$ and $p=10^{-3}$. (b) Physical two-qubit depolarizing-rate sweep at fixed $J_0\tau=0.04$ and $\alpha=3$. The same embedding hierarchy seen on BB72 persists on BB144. Error bars are 95\% confidence intervals; open markers denote zero-failure upper bounds (see Fig.~\ref{fig:bb72-crossing} caption).}
+\label{fig:bb144}
+\end{figure*}
+
+Appendix~\ref{app:numerics} collects additional BB72 kernel sweeps, the BB72 phase-diagram and exposure-by-kernel diagnostics, the BB90/BB108 supporting slices, and a direct bounded-thickness scaling comparison. They preserve the same embedding hierarchy as the main BB72 and BB144 results.
+
+\section{Discussion and outlook}
+\label{sec:discussion}
+
+With code and extraction schedule fixed, routed geometry changes the leading correlated-fault structure enough to change logical performance. Under the interaction-dominated same-tick model developed here, the monomial single-layer embedding carries a larger pair burden and higher logical error rate than the biplanar embedding across the explored BB72 and BB144 parameter window, and a logical-aware single-layer optimization reduces worst-case family exposure and logical error rate relative to the monomial baseline. These findings rest on two assumption-dependent steps: the phenomenological kernel $\kappa(d)$, which is constrained but not identified by public superconducting-hardware data (Appendix~\ref{app:hardware}), and the independent-pair treatment of the retained coefficients. The downstream theory---the twirl, the retained channel, the support graph, and the exposure metric---follows from the assumptions without further approximation. The retained model also admits a MAP decoder reduction (Appendix~\ref{app:decoder}), so geometry-aware priors can in principle be propagated to the decoder.
+
+These results align with the circuit-centric view of fault tolerance developed in recent work on residual-error metrics and spacetime codes~\cite{strikis_sec_2026,aitchison_beri_2025,pesah_spacetime_2025}, in which the routed extraction circuit helps determine the relevant noise structure. The findings also connect the implementation problem to AKP long-range noise~\cite{akp_2006}: for planar layouts with regularized algebraic kernels, the same $\alpha>2$ condition that governs two-dimensional summability also governs the aggregate pair couplings in the model. The biplanar hierarchy observed on BB72 and BB144 is compatible with BB memory proposals across multiple architecture variants---local, modular, multilayer, and neutral-atom~\cite{berthusen_local_2025,shaw_terhal_2025,strikis_berent_2023,mathews_multilayer_2025,liang_openboundaries_2025,wang_mueller_2026,poole_rydberg_2025,zhou_louvre_2025,berthusen_adaptive_2025,he_extractors_2025,yoder_tourdegross_2025}---and with the recent BB experiment on long-range-coupled superconducting hardware~\cite{wang_demo_2025}.
+
+Several scope boundaries matter. The crossing kernel is a combinatorial diagnostic, not a physical crosstalk law. The biplanar bounded-thickness embedding uses the BB-layer split and same-round noncrossing property from Ref.~\onlinecite{bravyi_memory_2024} without reconstructing a specific hardware routing geometry. Appendix~\ref{app:decoder} gives pair-aware decoder constructions that are exact only for the retained single-and-pair model and its truncations. Corollary~\ref{cor:certified-Jkappa} bounds worst-support pair-event incidence, but translating that bound into monotone finite-coupling logical-error ordering for arbitrary decoders would require additional assumptions.
+
+\subsection{Limitations}
+
+The microscopic model retains only the inter-block interaction term of the general two-block family (Remark~\ref{rem:general-family}); the additive-local component $J_1(\hat P_e+\hat P_{e'})$, which contributes independent single-block faults rather than correlated pairs, is omitted. Treating both terms simultaneously with separate kernel profiles would generalize the model but is not pursued here. The model retains only two-block pair couplings and uses a Pauli-twirl approximation, thereby omitting multi-block correlations and coherent accumulation across rounds. The kernel family $\kappa(d)$ is phenomenological rather than derived from a device-specific electromagnetic model, so the absolute size of the geometry penalty depends on the assumed profile. The computational study centers on BB72 and BB144 under a single production decoder (BP+OSD); although Appendix~\ref{app:decoder} gives correlation-aware constructions for the retained model, no like-for-like circuit-level decoder comparison is included. The logical-aware design program is implemented only for the four-column single-layer architecture. The AKP-inspired compatibility gives an asymptotic compatibility criterion, not a finite-code threshold estimate.
+
+\subsection{Future directions}
+
+Appendix~\ref{app:decoder} shows how to build exact and approximate correlation-aware decoders for the retained model. Recent correlated and BB-specific decoding work~\cite{maan_correlated_2026,sahay_matching_2026} suggests that geometry-aware priors can be incorporated into production decoders. The same analytical framework also applies to modular, open-boundary, multilayer, and neutral-atom qLDPC extraction schemes with explicit routing geometry~\cite{strikis_berent_2023,liang_openboundaries_2025,mathews_multilayer_2025,poole_rydberg_2025}. On the design side, the logical-aware program can be extended to larger BB families and beyond pure-$q(L)$ objectives, and Theorem~\ref{thm:first-order-la} points to $C_D(\phi)$ as the sharper weak-correlation objective for a fixed decoder.
+
+Several directions would strengthen the microscopic-to-retained bridge. Deriving the effective inter-block coupling matrix $J_{ee'}(\phi)$ from a device-level Hamiltonian via Schrieffer--Wolff or black-box quantization methods would replace the phenomenological kernel $\kappa(d)$ with a controlled reduction, moving the microscopic front end from model-dependent to derived. The schedule-level retained reduction is already controlled by Theorem~\ref{thm:schedule-prop}, Corollary~\ref{cor:linearized}, and Eq.~\eqref{eq:cycle-compose}. The decoder-aware coefficient $C_D(\phi)$ from Theorem~\ref{thm:first-order-la} has been evaluated at a single operating point (Sec.~\ref{sec:logical-aware}); extending the evaluation to the full parameter grid and to the retained MAP decoder of Appendix~\ref{app:decoder} would give a sharper design objective than $J_\kappa$ across the entire sweep.
+
+Additional open problems include: treating both interaction and additive-local terms simultaneously with independent kernel profiles; multi-round coherent accumulation beyond the per-round twirl; experimental calibration of $\kappa(d)$ from same-platform crosstalk data (Appendix~\ref{app:hardware} gives a preliminary anchoring); and extensions to non-CSS codes and beyond-Pauli twirls.
+
+\begin{acknowledgments}
+The author thanks Armands Strikis for suggesting the crossing-based noise model that initiated this work and for guidance and discussions throughout, and Tam\'as Noszk\'o for suggesting the logical-aware embedding optimization. Simulations have been performed using resources provided by the Laboratory for Scientific Computing (LSC) at the Cavendish Laboratory, University of Cambridge.
+\end{acknowledgments}
+
+\section*{Data and code availability}
+The simulation pipeline, processed Monte Carlo data, and figure-generation scripts are available at \url{https://github.com/angelodibella/works} in the subfolder for this paper (submission snapshot: commit \texttt{1c17ddb}).
+
+\appendix
+
+\section{Claim taxonomy and notation}
+\label{app:tables}
+
+Table~\ref{tab:claim-taxonomy} classifies the paper's claims by evidential status. Table~\ref{tab:notation} collects the main symbols.
+
+\begin{table}[!htbp]
+\caption{Claim taxonomy.}\label{tab:claim-taxonomy}
+\footnotesize
+\renewcommand{\arraystretch}{1.2}%
+\begin{ruledtabular}
+\begin{tabular}{ll}
+\textbf{Status} & \textbf{Claim} \\
+\colrule
+Exact (proved) & General Pauli-twirl (Thm.~\ref{thm:general-twirl}) \\
+& $w_{\mathrm{eff}}=|S|-\nu$ (Thm.~\ref{thm:deff}) \\
+& Complete-graph $w_{\mathrm{eff}}=\lceil|S|/2\rceil$ (Cor.~\ref{cor:complete-weff}) \\
+& Two-sided exposure bound (Prop.~\ref{prop:union}) \\
+& Summability $\alpha>2$ (Lem.~\ref{lem:summability}) \\
+\hline
+Controlled & Weight-$\le 2$ truncation (Thm.~\ref{thm:schedule-prop}) \\
+& AKP-inspired condition $J_0\tau\eta_{\max}<\eta_0^{\mathrm{blk}}$ \\
+\hline
+Model & Retained coefficients $b_{ij}^\sigma$ (Eq.~\eqref{eq:retained-channel}) \\
+& Logical-aware objective $J_\kappa$ \\
+& Leading-order simulation emulator \\
+\hline
+Empirical & $5\times$ LER ratio, BB72, power-law $\alpha\!=\!3$ (Sec.~\ref{subsec:bb72-power}) \\
+& $\rho_\mathrm{S}=0.965$, fixed $p\!=\!10^{-3}$, 59 points (Sec.~\ref{subsec:scatter}) \\
+& 64/65 matched pairs concordant (Sec.~\ref{subsec:scatter}) \\
+& $26\%$ worst-case exposure reduction (Sec.~\ref{subsec:la}) \\
+& $C_D$ ordering matches $J_\kappa$; pilot, one point (App.~\ref{app:decoder}) \\
+\end{tabular}
+\end{ruledtabular}
+\end{table}
+
+\begin{table}[!htbp]
+\caption{Notation summary.}\label{tab:notation}
+\footnotesize
+\renewcommand{\arraystretch}{1.2}%
+\begin{ruledtabular}
+\begin{tabular}{ll}
+$\bb{n,k,d}$ & Code with $n$ qubits, $k$ logical qubits, distance $d$ \\
+$\phi$ & Routed embedding \\
+$d_\phi(e,e')$ & Routed separation between gate blocks \\
+$\kappa(d)$ & Proximity kernel (dimensionless, $\kappa(0)=1$) \\
+$J_0,\,\tau$ & Coupling scale, gate-block duration \\
+$\theta(d)$ & Dimensionless phase $\tau J_0\kappa(d)$ \\
+$p(d)$ & Twirled pair-fault probability $\sin^2\theta(d)$ \\
+$\eta_e^{(t)}(\phi)$ & Same-tick block exposure of gate block $e$ \\
+$A_t$ & Set of simultaneously active block pairs in tick $t$ \\
+$\Theta_t$ & Tickwise coupling norm ($\Theta_t^2=\sum_{a\in A_t}\theta_a^2$) \\
+$q_\kappa(d)$ & Retained sector coefficient after Clifford propagation \\
+$C_\phi^\sigma$ & Weighted correlation graph (sector $\sigma$) \\
+$\nu_\phi^\sigma(L)$ & Matching number on support of $L$ \\
+$\Ew_\phi^\sigma(L)$ & Support exposure on support of $L$ \\
+$J_\kappa(\phi;\,\RX)$ & Logical-aware objective (max exposure over family) \\
+$C_D(\phi)$ & Decoder-aware first-order coefficient \\
+\end{tabular}
+\end{ruledtabular}
+\end{table}
+
+\section{Supplementary geometry figures}
+\label{app:geometry}
+
+This appendix collects the supplementary geometry figures cited in the main text.
+
+\subsection{Toric-base placement}
+
+Figure~\ref{fig:toric-base} gives the toric-base placement rule used in the numerical bounded-thickness construction. The routing-layer assignment is applied only after the base-plane placement is fixed.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.98\columnwidth]{figures/bb_toric_base_patch.pdf}
+\caption{Toric-base placement rule underlying the biplanar bounded-thickness embedding. The displayed lattice patch uses the coordinate convention $q(L):(2a,2b)$, $q(X):(2a{+}1,2b)$, $q(Z):(2a,2b{+}1)$, $q(R):(2a{+}1,2b{+}1)$. The highlighted $q(X)$ site at cell $(a,b)=(1,1)$ shows the $A$-family (blue, to $q(L)$) and $B$-family (red, to $q(R)$) shift vectors for the BB72 code. Dashed arrows indicate terms that wrap via periodic boundaries; the blue and red stripes highlight the target row and column, respectively. Routing-layer assignment is applied only after this base-plane placement has been fixed.}
+\label{fig:toric-base}
+\end{figure}
+
+\section{Microscopic motif diagnostics}
+\label{app:microscopic}
+
+This appendix collects the two microscopic sanity checks cited in Sec.~\ref{sec:model}.
+
+Figure~\ref{fig:two-block-norms} tests the two-block decomposition (Proposition~\ref{prop:two-block-decomp}) on a four-qubit motif (two simultaneous CNOTs). For the pure stray-drive perturbation ($J_2=0$), the inter-block norm vanishes identically; for the mixed regime ($J_2/J_1=0.1$), it is an order of magnitude smaller than the local pieces but dominates the leading correlated-pair sector at $O(\theta^2)$ versus $O(\theta^4)$.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/microscopic_r_int.pdf}
+\caption{Two-block decomposition norms from Proposition~\ref{prop:two-block-decomp} on a four-qubit motif (two simultaneous CNOTs). The local norms $\lVert\hat A_e\rVert_F=\lVert\hat B_{e'}\rVert_F$ grow linearly with $\theta$ (blue). For the stray-drive perturbation ($J_2=0$), the inter-block norm $\lVert\hat C_{ee'}\rVert_F$ vanishes identically (red, on the $x$-axis). For the mixed perturbation ($J_2/J_1=0.1$), $\hat C_{ee'}$ is nonzero but $10\times$ smaller than the local pieces (orange dashed). The shaded band marks the coupling window used in the circuit-level simulations.}
+\label{fig:two-block-norms}
+\end{figure}
+
+Figure~\ref{fig:weight-audit} tests the schedule-level propagation result (Theorem~\ref{thm:schedule-prop}) on a minimal one-round subcircuit (three data qubits connected to one ancilla by three consecutive CNOTs). The ancilla is eliminated via Kraus decomposition and the resulting data channel is Pauli-twirled using $p_P=(1/4^n)\sum_i|\operatorname{tr}(\hat P\hat K_i)|^2$. At $\theta=0$ the baseline channel has $M_0=M_3=0.5$ and $M_1=M_2=0$, reflecting the even-parity ($ZZZ$) stabilizer projection. Panel~(a) shows the geometry-induced weight-$1$ mass tracking $\sin^2\theta$ to within $2\%$ for the stray drive, confirming faithful twirl propagation; $M_2=M_1$ by subcircuit symmetry. Panel~(b) shows $M_{\ge 3}(\theta)$ decreasing monotonically: the geometry-induced increment $\Delta M_{\ge 3}<0$, so the crosstalk generates only weight-$1$ and weight-$2$ mass in this toy setting.
+
+\begin{figure*}[!htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{figures/microscopic_weight_audit.pdf}
+\caption{Pauli-weight spectrum on a three-data-qubit one-round subcircuit after ancilla elimination and Pauli twirl. The baseline channel ($\theta=0$) has $M_0=M_3=0.5$ from the stabilizer projection; all geometry-induced mass appears at weights $1$ and $2$. (a)~Weight-$1$ mass $M_1(\theta)$ for three coupling types; the dotted line is $\sin^2\theta$. The weight-$2$ mass $M_2=M_1$ by the subcircuit symmetry. (b)~Total weight-$\ge 3$ mass $M_{\ge 3}(\theta)$, starting at $0.5$ (dotted) and decreasing: the geometry-induced increment $\Delta M_{\ge 3}<0$, so the crosstalk does not generate new higher-weight contributions.}
+\label{fig:weight-audit}
+\end{figure*}
+
+\section{Supplementary numerical diagnostics}
+\label{app:numerics}
+
+This appendix collects the supplementary numerical diagnostics cited in the main text.
+
+\subsection{Additional BB72 sweeps}
+
+Figure~\ref{fig:bb72-additional} gathers three additional BB72 diagnostics: the exponential-kernel range sweep, the physical-error-rate sweep at fixed algebraic kernel, and a phase-diagram heat map of the monomial-to-bounded-thickness logical-error-rate ratio at $p=3\times10^{-3}$. Across the sampled window, the bounded-thickness embedding has a lower logical error rate.
+
+\begin{figure*}[!htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/bb72_additional_sweeps.pdf}
+\caption{Supplementary BB72 diagnostics in the $X$ sector. (a) Exponential-kernel sweep at fixed $J_0\tau=0.04$ and $p=10^{-3}$. (b) Physical-error-rate sweep for the regularized algebraic kernel at fixed $J_0\tau=0.04$ and $\alpha=3$. (c) Heat map of $\log_{10}(\mathrm{LER}_{\mathrm{mono}}/\mathrm{LER}_{\mathrm{bi}})$ across the available $(J_0\tau,\alpha)$ grid at $p=3\times10^{-3}$.}
+\label{fig:bb72-additional}
+\end{figure*}
+
+Figure~\ref{fig:bb72-phase-diagram} shows the absolute logical error rate of both embeddings across the full $(J_0\tau,\alpha)$ plane. At fixed coupling, the monomial embedding varies little with $\alpha$, whereas the bounded-thickness embedding suppresses logical error rate more strongly as the decay exponent moves above the summability threshold $\alpha=2$.
+
+\begin{figure*}[!htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/bb72_phase_diagram_heatmap.pdf}
+\caption{BB72 phase-diagram heatmaps of the logical error rate across the $(J_0\tau,\alpha)$ parameter plane at $p=3\times10^{-3}$ in the $X$ sector. Left: monomial embedding. Right: biplanar bounded-thickness embedding. Both panels use the same color scale. The monomial embedding shows near-uniform sensitivity across the exponent range at fixed coupling, whereas the bounded-thickness embedding shows a strong $\alpha$-dependent suppression that grows with increasing $\alpha$. Cell annotations are the total logical error rate $p_L$.}
+\label{fig:bb72-phase-diagram}
+\end{figure*}
+
+Figure~\ref{fig:bb72-by-kernel} separates the BB72 weighted-exposure scatter by kernel family. The crossing-kernel points provide the high-contrast diagnostic regime, whereas the positive-kernel points show the smoother exposure-controlled regime used in the main text.
+
+\begin{figure*}[!htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/bb72_exposure_by_kernel.pdf}
+\caption{BB72 weighted-exposure scatter split by kernel family (cf.\ the combined scatter in the main text, Fig.~\ref{fig:scatter}). Left: crossing kernel, which occupies the high-contrast validation regime. Center: power-law kernel, where both embeddings span a wide exposure range. Right: an exponential kernel that covers a narrower exposure window. Within each kernel class, the monotonic exposure–LER trend persists, confirming that the branch structure visible in the combined scatter arises from pooling different kernel families rather than from a breakdown of the exposure metric.}
+\label{fig:bb72-by-kernel}
+\end{figure*}
+
+\subsection{Supporting evidence from BB90 and BB108}
+
+Figure~\ref{fig:family-slices} gives the lightweight BB90 and BB108 $J_0\tau$ slices. They preserve the same embedding ordering as BB72 and BB144, but they are used only as supporting evidence.
+
+The intermediate geometry audit also shows that, on BB90, a simple maximum-exposure score can be anisotropic enough that the biplanar bounded-thickness embedding need not have lower exposure than the monomial embedding on every support-level worst-case metric, even though the sampled logical-error-rate hierarchy still favors bounded thickness. That is why BB90 and BB108 remain supplementary.
+
+\begin{figure*}[!htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/bb90_bb108_slices.pdf}
+\caption{Supporting evidence from BB90 and BB108 in the $X$ sector for the regularized algebraic kernel at $\alpha=3$ and $p=10^{-3}$. These slices support the same qualitative embedding hierarchy as the main BB72 and BB144 results.}
+\label{fig:family-slices}
+\end{figure*}
+
+\subsection{Biplanar scaling diagnostic}
+
+Figure~\ref{fig:biplanar-scaling} compares the bounded-thickness BB72 and BB144 sweeps directly. It is included as a compact operating window diagnostic; no asymptotic conclusion is drawn from it.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/biplanar_scaling.pdf}
+\caption{Supplementary bounded-thickness comparison between BB72 and BB144 under the regularized algebraic kernel at $\alpha=3$ and $p=10^{-3}$. The figure is included only as an operating-window diagnostic; no asymptotic threshold claim is extracted from it.}
+\label{fig:biplanar-scaling}
+\end{figure}
+
+\subsection{Robustness checks}
+
+Two reduced slices verify that the embedding hierarchy does not rely on tied local rates or on the choice of the $X$ sector.
+
+\emph{Untied local rates.} Setting $p_{\mathrm{cnot}}=p_{\mathrm{prep}}=p_{\mathrm{meas}}=10^{-3}$ and $p_{\mathrm{idle}}=10^{-4}$ leaves the ordering unchanged: the logical error rates at the reference operating point are $0.250$ (monomial), $0.175$ (logical-aware), and $0.052$ (biplanar), compared with the tied-rate baseline $0.287$, $0.205$, and $0.058$.
+
+\emph{$Z$-sector validation.} Decoding the $Z$ sector instead of the $X$ sector at the same operating point gives logical error rates $0.288$ (monomial), $0.216$ (logical-aware), and $0.059$ (biplanar), so the geometry penalty is not specific to the $X$ sector.
+
+\section{Further logical-aware design details}
+\label{app:la-details}
+
+This appendix records two additional logical-aware details: a BB108 benchmark-metadata note and the thickness-two control calculation.
+
+\subsection{Benchmark distance metadata versus pure-\texorpdfstring{$q(L)$}{q(L)} minimum weight}
+
+The literature benchmark is \bb{108,8,10}, whereas the minimum weight among pure-$q(L)$ representatives relevant to the logical-aware objective is $12$. The first is a full code property; the second is a restricted-family property used by the design program of Sec.~\ref{sec:logical-aware}. We keep them separate throughout.
+
+\subsection{Thickness-two extension}
+
+Admissible thickness-two embeddings behave differently. Let $\mathfrak E_{\mathrm{bi}}$ be the family of bounded-thickness embeddings that preserve the BB layer split and are planar within each relevant same-round layer. Then the crossing-local objective is trivial on $\mathfrak E_{\mathrm{bi}}$.
+
+\begin{proposition}[Triviality of the crossing-local objective on admissible bounded-thickness families]
+For every $\phi\in\mathfrak E_{\mathrm{bi}}$, the implemented crossing-local correlation graph in the relevant $X$-sector rounds is empty. Hence $J_{\times}(\phi;\,\RX)=0$ for all $\phi\in\mathfrak E_{\mathrm{bi}}$.
+\end{proposition}
+
+\begin{proof}
+By definition of admissibility, each relevant same-round routed layer is planar, so no same-round projected route pairs cross. The crossing kernel, therefore, assigns zero weight to every candidate pair edge.
+\end{proof}
+
+The meaningful thickness-two objective is therefore a distance-decay quantity such as the upper bound in Eq.~\eqref{eq:bi-surrogate-proof}. The present audit shows only modest additional gains from optimizing within the bounded-thickness family, so the main text keeps the default biplanar embedding fixed.
+
+\section{Decoder mismatch and correlation-aware decoding}
+\label{app:decoder}
+
+This section records the decoder-side constructions. The current correlation-aware BP+OSD (CBP+OSD) construction is formulated for the retained model rather than the full multi-round circuit-level channel, so no decoder-performance comparison is made here.
+
+\subsection{Decoder-mismatch theorem}
+
+Take $H=(1,1,1,1)$ over $\F$ and suppose the measured syndrome is $1$. Under an independent and identically distributed (iid) prior with bit-flip probability $p<1/2$, maximum-likelihood decoding prefers any weight-$1$ error to any weight-$3$ error. Under the correlated prior
+\begin{equation}
+\mu_{\mathrm{corr}}(e)\propto \mu_{\mathrm{iid}}(e)\exp!\left[J\sum_{i<j}e_i e_j\right],
+\end{equation}
+the ordering can reverse.
+
+\begin{theorem}[Factorized-prior ML and correlated-prior MAP can disagree]
+\label{thm:mismatch}
+For the single-check code above, if
+\begin{equation}
+J>\frac{2}{3}\log\left(\frac{1-p}{p}\right),
+\end{equation}
+then correlated-prior MAP decoding chooses a weight-$3$ error while factorized-prior maximum-likelihood decoding chooses a weight-$1$ error.
+\end{theorem}
+
+\begin{proof}
+Any odd-weight error has syndrome $1$. Under the iid prior, the log-probability difference between a weight-$3$ error and a weight-$1$ error is
+\begin{equation}
+\log\frac{p^3(1-p)}{p(1-p)^3}=2\log\frac{p}{1-p}<0,
+\end{equation}
+so the weight-$1$ configuration is preferred. Under the correlated prior, the weight-$3$ configuration gains an additional factor $e^{3J}$ because it has three occupied pairs, whereas the weight-$1$ configuration has none. The weight-$3$ error is preferred if and only if
+\begin{equation}
+2\log\frac{p}{1-p}+3J>0,
+\end{equation}
+which is the stated condition.
+\end{proof}
+
+\subsection{Exact augmented decoding for the retained single-and-pair model}
+
+Let $x_i\in\{0,1\}$ denote a retained single fault on data location $i$, and let $y_a\in\{0,1\}$ denote a retained pair fault on edge $a=(i_a,j_a)$ of the retained correlation graph. Collect them into the latent fault-location vector
+\begin{equation}
+z=\left(x_1,\ldots,x_n,y_1,\ldots,y_m\right)^\top.
+\end{equation}
+If $F$ maps latent single and pair locations to data errors, then the observed syndrome obeys
+\begin{equation}
+s=HFz=\widetilde H z,
+\qquad
+\widetilde H:=HF.
+\end{equation}
+Under an \emph{independent retained-location prior},
+\begin{equation}
+\Pr(z)\propto \prod_i u_i^{x_i}\left(1-u_i\right)^{1-x_i}\prod_a v_a^{y_a}\left(1-v_a\right)^{1-y_a}.
+\end{equation}
+Maximum-a-posteriori (MAP) decoding then reduces exactly to weighted decoding on the augmented matrix.
+
+\begin{theorem}[Exact reduction to weighted decoding]
+\label{thm:augmented}
+Under the independent retained-location prior, the MAP estimate is
+\begin{equation}
+\hat z=\argmin_{\widetilde H z=s}\left(\sum_i \lambda_i x_i+\sum_a \lambda_{i_aj_a}y_a\right),
+\label{eq:augmented-map}
+\end{equation}
+where
+\begin{equation}
+\lambda_i=\log\frac{1-u_i}{u_i},
+\qquad
+\lambda_{i_aj_a}=\log\frac{1-v_a}{v_a}.
+\end{equation}
+The corresponding data estimate is $\hat e=F\hat z$.
+\end{theorem}
+
+\begin{proof}
+Taking the negative logarithm of the independent retained-location prior yields the linear objective in Eq.~\eqref{eq:augmented-map} up to an additive constant. The syndrome constraint is exactly $\widetilde H z=s$. Therefore, MAP decoding is equivalent to the stated constrained weighted minimization.
+\end{proof}
+
+Without pair variables, Theorem~\ref{thm:augmented} reduces to ordinary weighted decoding and hence to standard BP+OSD. If one truncates the retained graph by discarding sufficiently weak pair edges, the same theorem remains exact for the truncated retained model.
+
+One can also work directly on the original data-error bits with the approximate pairwise-Ising correction,
+\begin{equation}
+\mu_{\mathrm{pair}}(e)\propto \mu_{\mathrm{iid}}(e)\exp\left(\sum_{i<j}J_{ij}e_i e_j\right).
+\end{equation}
+For a single pair factor coupling bits $i$ and $j$, the outgoing log-likelihood-ratio correction is
+\begin{equation}
+\Lambda_{f_{ij}\to i}(\ell)=\log\left(1+e^{-\ell}\right)-\log\left(1+e^{J_{ij}-\ell}\right),
+\end{equation}
+where $\ell=\log\frac{\Pr(e_j=0)}{\Pr(e_j=1)}$ is the incoming log-likelihood ratio from bit $j$ (positive $\ell$ favours $e_j=0$). This approximation is useful algorithmically, but is not needed for the results reported here.
+
+The retained model also has a decoder consequence. The mismatch theorem shows that factorized-prior maximum-likelihood and correlated-prior maximum-a-posteriori decoding can disagree even in a four-bit toy problem. Factorized-prior BP+OSD is therefore a useful baseline for the retained simulations, but it is not generally MAP-optimal when pair correlations are explicitly retained.
+
+\subsection{Decoder-aware first-order refinement}
+
+The objective $J_{\kappa}$ is intrinsic to the retained geometry model and does not depend on a decoder. In the weak-correlation regime, one can sharpen the design problem by expanding the logical failure probability to first order in the geometry-induced pair strength. Fix an embedding $\phi$ and a deterministic decoder $D$. Let $\xi$ collect all retained fault variables independent of a coupling parameter $\lambda$, and let $A(\phi)$ be the set of retained pair locations. For each $a\in A(\phi)$, let $Y_a\sim \mathrm{Bernoulli}(\lambda\bar v_a(\phi))$ independently, and let $F_D^{\phi}(\xi,Y)\in\{0,1\}$ indicate decoder failure.
+
+\begin{theorem}[Weak-correlation first-order ordering]
+\label{thm:first-order-la}
+For every fixed embedding $\phi$ and deterministic decoder $D$,
+\begin{equation}
+p_L^D(\phi,\lambda)
+:=
+\mathbb E\left[F_D^{\phi}(\xi,Y)\right]
+=
+p_{L,0}^D(\phi)+\lambda C_D(\phi)+O(\lambda^2),
+\end{equation}
+where $p_{L,0}^D(\phi):=\mathbb E[F_D^{\phi}(\xi,0)]$, $\Delta_a^D(\phi):=\mathbb E[F_D^{\phi}(\xi,e_a)-F_D^{\phi}(\xi,0)]$, and
+\begin{equation}
+C_D(\phi):=\sum_{a\in A(\phi)} \bar v_a(\phi)\,\Delta_a^D(\phi).
+\end{equation}
+If two embeddings $\phi$ and $\phi'$ have the same baseline $p_{L,0}^D$ and satisfy $C_D(\phi')<C_D(\phi)$, then $p_L^D(\phi',\lambda)<p_L^D(\phi,\lambda)$ for all sufficiently small $\lambda>0$.
+\end{theorem}
+
+\begin{proof}
+Expanding in $\lambda$: the zero-pair probability is $1-\lambda\sum_a\bar v_a+O(\lambda^2)$ and each single-pair probability is $\lambda\bar v_a+O(\lambda^2)$; all multi-pair configurations are $O(\lambda^2)$. Collecting terms gives the stated expansion.
+\end{proof}
+
+A pilot finite-difference estimate at $(p,\alpha)=(10^{-3},3)$ using BP+OSD with $10{,}000$ shots gives $C_D\approx 0.82$ (monomial), $0.45$ (logical-aware), and $0.26$ (biplanar bounded-thickness), matching the intrinsic exposure ordering with a sharper monomial-to-biplanar ratio ($3.2\times$ for $C_D$ versus $1.8\times$ for $J_\kappa$).
+
+\section{Public-data-informed priors for \texorpdfstring{$\kappa$}{kappa}}
+\label{app:hardware}
+
+The kernel $\kappa(d)$ and coupling scale $J_0$ are free parameters of the model. This appendix uses publicly available superconducting-qubit crosstalk data to check that the paper's operating window is hardware-plausible and that the embedding hierarchy persists across the resulting kernel range. The public datasets constrain an effective geometry-dependent crosstalk scale and decay envelope; they do not by themselves distinguish the inter-block interaction mechanism ($\hat P_e\otimes\hat P_{e'}$) used in the simulations from other crosstalk channels such as additive-local stray fields.
+
+\subsection{Amplitude scale}
+
+Kosen et al.\ report xy-drive crosstalk on a 25-qubit flip-chip processor with average values $-39.4\pm 3.7$\,dB and $-37.4\pm 3.9$\,dB across two device variants, and a worst-case value of $-27$\,dB~\cite{kosen_crosstalk_2024}. Interpreting each as a spurious rotation during a $\pi/2$ target pulse via the proxy-angle map
+\begin{equation}
+\theta_{\mathrm{xtalk}}=\frac{\pi}{2}\,10^{x_{\mathrm{dB}}/20}
+\end{equation}
+gives
+\begin{equation}
+\theta_{\mathrm{avg}}\approx 0.017\text{--}0.021\,\mathrm{rad},
+\qquad
+\theta_{\mathrm{worst}}\approx 0.070\,\mathrm{rad}.
+\end{equation}
+Separately, the Kunlun BB processor~\cite{wang_demo_2025} reports simultaneous-CZ error $0.98\%$ versus isolated-CZ error $0.73\%$; mapping the excess $\Delta p\approx 0.25\%$ through $\theta\approx\sqrt{\Delta p}$ gives a proxy angle of $\theta\approx 0.050$\,rad. Both estimates fall within the paper's sweep window $J_0\tau\in[0.02,\,0.08]$, so the explored coupling range is consistent with public superconducting-hardware crosstalk data.
+
+\subsection{Kernel shape and decay length}
+
+Barrett et al.\ fit DC flux crosstalk on a 16-qubit flip-chip array to the shifted reciprocal law $c(d)=100/(ad+1)+c_0$ with $a=178.2$\,mm$^{-1}$ and $c_0=0.264\%$~\cite{barrett_flux_2023}. Normalizing to $\kappa_{\mathrm{DC}}(d)=c(d)/c(0)$ and converting to the paper's pitch units via a physical pitch $\delta\in[0.2,\,0.5]$\,mm yields
+\begin{equation}
+\kappa_{\mathrm{DC}}(1\,\text{pitch})\approx 0.01\text{--}0.03.
+\end{equation}
+Fitting an exponential $e^{-d/\xi}$ to this one-pitch value gives $\xi\approx 0.25$--$0.30$ pitch units. For fast-flux pulses the same paper reports crosstalk roughly $100\times$ smaller in amplitude, further reducing the effective coupling scale but not directly constraining the normalized decay length $\xi$ without additional shape assumptions. Conversely, Kosen's xy-drive trend of $-1$\,dB/mm corresponds to an amplitude decay length $\xi_{\mathrm{mm}}=20/({\ln 10})\approx 8.7$\,mm, giving $\xi\approx 17$--$43$ pitch units for $\delta\in[0.2,\,0.5]$\,mm; drive leakage therefore decays much more slowly than flux leakage.
+
+Aguila et al.\ demonstrate that active Z-line compensation can reduce flux crosstalk from $56.5$\textperthousand{} to $0.13$\textperthousand{}~\cite{aguila_flux_2025}, a factor of $\sim\!400$, providing a lower bound on the compensated-floor regime.
+
+\subsection{Comparison with existing simulation data}
+
+Figure~\ref{fig:proxy-kernel} shows dedicated BB72 Monte Carlo results at $J_0\tau=0.04$ and $p=10^{-3}$ for the exponential kernel at four decay lengths: $\xi=0.25$ (flux-like), $1.0$, $4.0$, and $8.0$ pitch units. These cover the flux-like end of the hardware-informed range and extend toward, but do not fully reach, the drive-like regime ($\xi\gtrsim 17$). At $\xi=0.25$, the bounded-thickness embedding has logical error rate $0.051$ versus $0.287$ for monomial (a factor of $5.6$); at $\xi=1.0$ the ratio is $3.3$. As $\xi$ increases toward the drive-like regime, the kernel flattens and nearly all pairs contribute equally regardless of layout, so the gap narrows: at $\xi=8$ the two embeddings give comparable logical error rates ($\sim\!0.6$). The embedding hierarchy persists across the simulated range and is strongest in the steep-decay regime where layer separation has the largest geometric effect.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/proxy_kernel_sweep.pdf}
+\caption{BB72 logical error rate at $J_0\tau=0.04$ and $p=10^{-3}$ as a function of exponential decay length $\xi$. The shaded bands mark the hardware-informed regimes: flux-like ($\xi\approx 0.25$, from Barrett DC-flux data) and the lower edge of the drive-like range ($\xi\gtrsim 17$, from Kosen xy-crosstalk data; the simulated range extends to $\xi=8$). The bounded-thickness embedding outperforms the monomial embedding across the steep-decay range and converges at large $\xi$ where the kernel is nearly flat. $2000$ shots per point; error bars are 95\% Clopper--Pearson intervals.}
+\label{fig:proxy-kernel}
+\end{figure}
+
+\bibliography{refs}
+
+\end{document}
