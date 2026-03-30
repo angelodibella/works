@@ -1,8 +1,15 @@
-# This file will be populated once the paper is available on arXiv or published.
 cff-version: 1.2.0
 message: "If you use this code, please cite it using the metadata in this file."
 title: "Geometry-induced correlated noise in qLDPC syndrome extraction"
+type: software
+version: 1.0.0
+doi: 10.5281/zenodo.19337541
+url: "https://github.com/angelodibella/works"
+repository-code: "https://github.com/angelodibella/works"
 authors:
   - family-names: "Di Bella"
     given-names: "Angelo"
     orcid: "https://orcid.org/0009-0005-5593-2993"
+    affiliation: "University of Cambridge"
+license: MIT
+date-released: "2026-03-30"
